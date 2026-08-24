@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      target: dev
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env.local
+    environment:
+      - APP_ENV=dev
+    healthcheck:
+      disable: true
+
+  web:
+    ports:
+      - "8080:80"
+    volumes:
+      - ./public:/var/www/html/public:ro
+    depends_on:
+      app:
+        condition: service_started
+
+  database:
+    env_file:
+      - .env.local
+    ports:
+      - "5433:5432"
