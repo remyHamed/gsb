@@ -14,8 +14,8 @@ gantt
 
     section 0. Fondation
     Initialisation projet & commit   :done, init, 2026-08-17, 1d
-    Docker Compose & Environnement   :active, env, after init, 3d
-    Configuration GitLab CI/CD       :ci, after env, 2d
+    Docker Compose & Environnement   :done, env, after init, 3d
+    Configuration GitLab CI/CD       :active, ci, after env, 2d
 
     section 1. Modélisation
     Création Entités (Doctrine)      :b1, after ci, 3d
@@ -42,7 +42,7 @@ Chaque étape ci-dessous correspond à une branche ou une issue sur ce dépôt.
 ### Phase 0 : Infrastructure (Fondations)
 
 - [x] Initialisation du projet Symfony et premier commit sur GitLab.
-- [ ] Dockerisation : mise en place de php-fpm, nginx, mysql via docker-compose.
+- [x] Dockerisation : mise en place de php-fpm, nginx, postgresql via docker-compose (Dockerfile multi-stage dev/prod, healthchecks, séparation des secrets).
 - [ ] CI/CD : configuration du `.gitlab-ci.yml` pour le linting et les tests automatiques.
 
 ### Phase 1 : Modélisation (ORM)
