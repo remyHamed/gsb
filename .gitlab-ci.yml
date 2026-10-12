@@ -3,7 +3,6 @@ stages:
   - build
 
 variables:
-  PHP_VERSION: "8.4"
   POSTGRES_DB: "test_db"
   POSTGRES_USER: "test_user"
   POSTGRES_PASSWORD: "test_password"
@@ -15,11 +14,9 @@ services:
 
 php-tests:
   stage: test
-  image: php:${PHP_VERSION}-cli-alpine
+  image: composer:2
   before_script:
-    - apk add --no-cache git libpq-dev postgresql-client autoconf build-base
-    - docker-php-ext-install pdo pdo_pgsql
-    - curl -sS https://getcomposer.org | php -- --install-dir=/usr/local/bin --filename=composer
+    - docker-php-ext-install pdo pdo_pgsql || true
   script:
     - composer install --prefer-dist --no-ansi --no-interaction --no-progress
     - php bin/console doctrine:database:create --env=test || true
