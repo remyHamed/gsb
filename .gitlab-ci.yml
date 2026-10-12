@@ -6,8 +6,7 @@ php-tests:
   stage: test
   image: composer:2
   services:
-    - name: postgres:15-alpine
-      alias: postgres
+    - postgres:15-alpine
   variables:
     APP_ENV: test
     POSTGRES_DB: "test_db"
@@ -36,4 +35,4 @@ docker-build:
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker build --target prod -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"   
