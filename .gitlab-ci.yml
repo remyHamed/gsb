@@ -2,33 +2,38 @@ stages:
   - test
   - build
 
-variables:
-  POSTGRES_DB: "test_db"
-  POSTGRES_USER: "test_user"
-  POSTGRES_PASSWORD: "test_password"
-  DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?serverVersion=15&charset=utf8"
-
-services:
-  - name: postgres:15-alpine
-    alias: postgres
-
 php-tests:
   stage: test
   image: composer:2
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+  variables:
+    APP_ENV: test
+    POSTGRES_DB: "test_db"
+    POSTGRES_USER: "test_user"
+    POSTGRES_PASSWORD: "test_password"
+    DATABASE_URL: "postgresql://test_user:test_password@postgres:5432/test_db?serverVersion=15&charset=utf8"
   before_script:
-    - docker-php-ext-install pdo pdo_pgsql || true
+    - apk add --no-cache postgresql-dev
+    - docker-php-ext-install pdo pdo_pgsql
   script:
     - composer install --prefer-dist --no-ansi --no-interaction --no-progress
-    - php bin/console doctrine:database:create --env=test || true
+    - php bin/console doctrine:database:create --env=test --if-not-exists
     - php bin/console doctrine:migrations:migrate --no-interaction --env=test
     - php bin/phpunit
 
 docker-build:
   stage: build
-  image: docker:latest
+  image: docker:27
   services:
-    - docker:dind
+    - docker:27-dind
   variables:
-    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs/client"
   script:
-    - docker build --target prod -t gsb-app:$CI_COMMIT_SHA .
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build --target prod -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
