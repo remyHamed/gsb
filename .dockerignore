@@ -1,6 +1,5 @@
 .git
 .gitignore
-.dockerignore
 
 docker
 docker-compose*.yml
@@ -10,7 +9,6 @@ var/
 vendor/
 node_modules/
 
-.env
 .env.local
 .env.local.php
 .env.*.local
