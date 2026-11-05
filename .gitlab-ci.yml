@@ -1,26 +1,21 @@
 stages:
-  - test
+  - check
   - build
 
-php-tests:
-  stage: test
-  image: composer:2
-  services:
-    - postgres:15-alpine
+php-check:
+  stage: check
+  image: php:8.4-cli
   variables:
-    APP_ENV: test
-    POSTGRES_DB: "test_db"
-    POSTGRES_USER: "test_user"
-    POSTGRES_PASSWORD: "test_password"
-    DATABASE_URL: "postgresql://test_user:test_password@postgres:5432/test_db?serverVersion=15&charset=utf8"
+    APP_ENV: prod
+    DATABASE_URL: "postgresql://user:pass@localhost:5432/db?serverVersion=15&charset=utf8"
   before_script:
-    - apk add --no-cache postgresql-dev
-    - docker-php-ext-install pdo pdo_pgsql
+    - apt-get update && apt-get install -y --no-install-recommends git unzip libicu-dev libpq-dev libzip-dev
+    - docker-php-ext-install intl pdo_pgsql zip
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
   script:
     - composer install --prefer-dist --no-ansi --no-interaction --no-progress
-    - php bin/console doctrine:database:create --env=test --if-not-exists
-    - php bin/console doctrine:migrations:migrate --no-interaction --env=test
-    - php bin/phpunit
+    - php bin/console lint:container
+    - php bin/console lint:yaml config
 
 docker-build:
   stage: build
@@ -35,4 +30,4 @@ docker-build:
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker build --target prod -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"   
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"

@@ -36,4 +36,75 @@ class Week
     {
         $this->shifts = new ArrayCollection();
     }
+
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
+
+    public function getYear(): ?int
+    {
+        return $this->year;
+    }
+
+    public function setYear(int $year): static
+    {
+        $this->year = $year;
+
+        return $this;
+    }
+
+    public function getWeekNumber(): ?int
+    {
+        return $this->weekNumber;
+    }
+
+    public function setWeekNumber(int $weekNumber): static
+    {
+        $this->weekNumber = $weekNumber;
+
+        return $this;
+    }
+
+    public function getStartDate(): ?\DateTimeImmutable
+    {
+        return $this->startDate;
+    }
+
+    public function setStartDate(\DateTimeImmutable $startDate): static
+    {
+        $this->startDate = $startDate;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Shift>
+     */
+    public function getShifts(): Collection
+    {
+        return $this->shifts;
+    }
+
+    public function addShift(Shift $shift): static
+    {
+        if (!$this->shifts->contains($shift)) {
+            $this->shifts->add($shift);
+            $shift->setWeek($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShift(Shift $shift): static
+    {
+        if ($this->shifts->removeElement($shift)) {
+            // set the owning side to null (unless already changed)
+            if ($shift->getWeek() === $this) {
+                $shift->setWeek(null);
+            }
+        }
+
+        return $this;
+    }
 }

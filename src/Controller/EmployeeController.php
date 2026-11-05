@@ -2,80 +2,77 @@
 
 namespace App\Controller;
 
+use App\Dto\EmployeeInput;
 use App\Entity\Employee;
-use App\Form\EmployeeType;
 use App\Repository\EmployeeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/employee')]
+#[Route('/api/employees')]
 final class EmployeeController extends AbstractController
 {
-    #[Route(name: 'app_employee_index', methods: ['GET'])]
-    public function index(EmployeeRepository $employeeRepository): Response
+    #[Route('', name: 'api_employee_index', methods: ['GET'])]
+    public function index(EmployeeRepository $repository): JsonResponse
     {
-        return $this->render('employee/index.html.twig', [
-            'employees' => $employeeRepository->findAll(),
-        ]);
+        return $this->json(array_map($this->toArray(...), $repository->findAll()));
     }
 
-    #[Route('/new', name: 'app_employee_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}', name: 'api_employee_show', methods: ['GET'])]
+    public function show(Employee $employee): JsonResponse
     {
+        return $this->json($this->toArray($employee));
+    }
+
+    #[Route('', name: 'api_employee_create', methods: ['POST'])]
+    public function create(
+        #[MapRequestPayload] EmployeeInput $input,
+        EntityManagerInterface $em,
+    ): JsonResponse {
         $employee = new Employee();
-        $form = $this->createForm(EmployeeType::class, $employee);
-        $form->handleRequest($request);
+        $this->hydrate($employee, $input);
+        $em->persist($employee);
+        $em->flush();
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($employee);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_employee_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('employee/new.html.twig', [
-            'employee' => $employee,
-            'form' => $form,
-        ]);
+        return $this->json($this->toArray($employee), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'app_employee_show', methods: ['GET'])]
-    public function show(Employee $employee): Response
-    {
-        return $this->render('employee/show.html.twig', [
-            'employee' => $employee,
-        ]);
+    #[Route('/{id}', name: 'api_employee_update', methods: ['PUT'])]
+    public function update(
+        Employee $employee,
+        #[MapRequestPayload] EmployeeInput $input,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        $this->hydrate($employee, $input);
+        $em->flush();
+
+        return $this->json($this->toArray($employee));
     }
 
-    #[Route('/{id}/edit', name: 'app_employee_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Employee $employee, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}', name: 'api_employee_delete', methods: ['DELETE'])]
+    public function delete(Employee $employee, EntityManagerInterface $em): JsonResponse
     {
-        $form = $this->createForm(EmployeeType::class, $employee);
-        $form->handleRequest($request);
+        $em->remove($employee);
+        $em->flush();
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_employee_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('employee/edit.html.twig', [
-            'employee' => $employee,
-            'form' => $form,
-        ]);
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}', name: 'app_employee_delete', methods: ['POST'])]
-    public function delete(Request $request, Employee $employee, EntityManagerInterface $entityManager): Response
+    private function hydrate(Employee $employee, EmployeeInput $input): void
     {
-        if ($this->isCsrfTokenValid('delete'.$employee->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($employee);
-            $entityManager->flush();
-        }
+        $employee->setFirstName($input->firstName);
+        $employee->setLastName($input->lastName);
+    }
 
-        return $this->redirectToRoute('app_employee_index', [], Response::HTTP_SEE_OTHER);
+    private function toArray(Employee $employee): array
+    {
+        return [
+            'id' => $employee->getId(),
+            'firstName' => $employee->getFirstName(),
+            'lastName' => $employee->getLastName(),
+        ];
     }
 }

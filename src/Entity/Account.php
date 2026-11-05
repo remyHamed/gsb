@@ -39,4 +39,91 @@ class Account
     {
         $this->createdAt = new \DateTimeImmutable();
     }
+
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): static
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    public function getPasswordHash(): ?string
+    {
+        return $this->passwordHash;
+    }
+
+    public function setPasswordHash(string $passwordHash): static
+    {
+        $this->passwordHash = $passwordHash;
+
+        return $this;
+    }
+
+    public function getRoles(): array
+    {
+        return $this->roles;
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    public function isActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getEmployee(): ?Employee
+    {
+        return $this->employee;
+    }
+
+    public function setEmployee(?Employee $employee): static
+    {
+        // unset the owning side of the relation if necessary
+        if ($employee === null && $this->employee !== null) {
+            $this->employee->setAccount(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($employee !== null && $employee->getAccount() !== $this) {
+            $employee->setAccount($this);
+        }
+
+        $this->employee = $employee;
+
+        return $this;
+    }
 }

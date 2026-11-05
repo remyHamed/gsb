@@ -52,4 +52,129 @@ class Employee
     {
         $this->createdAt = new \DateTimeImmutable();
     }
+
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
+
+    public function getFirstName(): ?string
+    {
+        return $this->firstName;
+    }
+
+    public function setFirstName(string $firstName): static
+    {
+        $this->firstName = $firstName;
+
+        return $this;
+    }
+
+    public function getLastName(): ?string
+    {
+        return $this->lastName;
+    }
+
+    public function setLastName(string $lastName): static
+    {
+        $this->lastName = $lastName;
+
+        return $this;
+    }
+
+    public function getDateAnciennete(): ?\DateTimeImmutable
+    {
+        return $this->dateAnciennete;
+    }
+
+    public function setDateAnciennete(\DateTimeImmutable $dateAnciennete): static
+    {
+        $this->dateAnciennete = $dateAnciennete;
+
+        return $this;
+    }
+
+    public function getWeeklyHours(): ?int
+    {
+        return $this->weeklyHours;
+    }
+
+    public function setWeeklyHours(int $weeklyHours): static
+    {
+        $this->weeklyHours = $weeklyHours;
+
+        return $this;
+    }
+
+    public function getAvailableSlots(): array
+    {
+        return $this->availableSlots;
+    }
+
+    public function setAvailableSlots(array $availableSlots): static
+    {
+        $this->availableSlots = $availableSlots;
+
+        return $this;
+    }
+
+    public function getDatesExclues(): array
+    {
+        return $this->datesExclues;
+    }
+
+    public function setDatesExclues(array $datesExclues): static
+    {
+        $this->datesExclues = $datesExclues;
+
+        return $this;
+    }
+
+    public function getSkills(): array
+    {
+        return $this->skills;
+    }
+
+    public function setSkills(array $skills): static
+    {
+        $this->skills = $skills;
+
+        return $this;
+    }
+
+    public function isActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getAccount(): ?Account
+    {
+        return $this->account;
+    }
+
+    public function setAccount(Account $account): static
+    {
+        $this->account = $account;
+
+        return $this;
+    }
 }
