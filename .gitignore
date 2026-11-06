@@ -8,3 +8,8 @@
 /vendor/
 ###< symfony/framework-bundle ###
 employees.json
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###

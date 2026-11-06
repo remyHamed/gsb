@@ -43,13 +43,13 @@ Chaque étape ci-dessous correspond à une branche ou une issue sur ce dépôt.
 
 - [x] Initialisation du projet Symfony et premier commit sur GitLab.
 - [x] Dockerisation : mise en place de php-fpm, nginx, postgresql via docker-compose (Dockerfile multi-stage dev/prod, healthchecks, séparation des secrets).
-- [ ] CI/CD : configuration du `.gitlab-ci.yml` pour le linting et les tests automatiques.
+- [X] CI/CD : configuration du `.gitlab-ci.yml` pour le linting et les tests automatiques.
 
 ### Phase 1 : Modélisation (ORM)
 
-- [ ] Entités : utilisation de `make:entity` pour reproduire le modèle de données de l'API TS.
+- [X] Entités : utilisation de `make:entity` pour reproduire le modèle de données de l'API TS.
   - Note : le champ sera nommé `availableSlots` (nom retenu suite à un renommage en cours dans la source TS, non finalisé).
-- [ ] Migrations : génération et exécution des fichiers de migration Doctrine.
+- [X] Migrations : génération et exécution des fichiers de migration Doctrine.
 
 ### Phase 2 : Sécurité & Authentification
 

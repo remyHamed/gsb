@@ -6,10 +6,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+
+
+
 
 #[ORM\Entity(repositoryClass: AccountRepository::class)]
 #[ORM\Table(name: 'accounts')]
-class Account
+#[UniqueEntity('email', message: 'Cet email est déjà utilisé.')]
+class Account implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
@@ -69,9 +76,16 @@ class Account
         return $this;
     }
 
+    /** @return list<string> */
     public function getRoles(): array
     {
-        return $this->roles;
+        $roles = array_map(
+            static fn (string $r): string => str_starts_with($r, 'ROLE_') ? $r : 'ROLE_' . $r,
+            $this->roles,
+        );
+        $roles[] = 'ROLE_USER';
+
+        return array_values(array_unique($roles));
     }
 
     public function setRoles(array $roles): static
@@ -126,4 +140,15 @@ class Account
 
         return $this;
     }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->passwordHash;
+    }
+
 }
