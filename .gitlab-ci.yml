@@ -1,5 +1,6 @@
 stages:
   - check
+  - test
   - build
 
 php-check:
@@ -31,3 +32,24 @@ docker-build:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker build --target prod -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+variables:
+  APP_ENV: test
+  POSTGRES_DB: app
+  POSTGRES_USER: app
+  POSTGRES_PASSWORD: app
+  DATABASE_URL: "postgresql://app:app@postgres:5432/app?serverVersion=16&charset=utf8"
+  JWT_PASSPHRASE: ci-passphrase
+
+phpunit:
+  stage: test
+  services:
+    - name: postgres:16
+      alias: postgres
+  before_script:
+    - composer install --no-interaction --prefer-dist
+    - php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction
+    - php bin/console doctrine:database:create --if-not-exists --env=test --no-interaction
+    - php bin/console doctrine:migrations:migrate --env=test --no-interaction
+  script:
+    - php bin/phpunit --testdox
