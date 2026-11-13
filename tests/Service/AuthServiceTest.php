@@ -6,7 +6,7 @@ use App\Dto\RegisterInput;
 use App\Entity\Account;
 use App\Exception\EmailAlreadyUsedException;
 use App\Repository\AccountRepository;
-use App\Service\AuthService;
+use App\Service\Impl\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;

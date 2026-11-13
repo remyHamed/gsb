@@ -1,20 +1,21 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Impl;
 
-use App\Dto\RegisterInput;
 use App\Entity\Account;
+use App\Dto\RegisterInput;
 use App\Exception\EmailAlreadyUsedException;
-use App\Repository\AccountRepository;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use App\Repository\AccountRepositoryInterface;
+use App\Service\Contract\AuthServiceInterface;
+use App\Service\Impl\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class AuthService
+class AuthService implements AuthServiceInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly AccountRepository $accounts,
+        private readonly AccountRepositoryInterface $accounts,
         private readonly UserPasswordHasherInterface $hasher,
     ) {
     }
@@ -32,7 +33,6 @@ class AuthService
             $this->em->persist($account);
             $this->em->flush();
         } catch (UniqueConstraintViolationException) {
-            // deux inscriptions simultanées avec le même email
             throw new EmailAlreadyUsedException($input->email);
         }
 

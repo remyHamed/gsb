@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Dto\RegisterInput;
-use App\Service\AuthService;
+use App\Service\Impl\AuthService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
