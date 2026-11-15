@@ -7,25 +7,23 @@ use App\Entity\Account;
 use App\Exception\EmailAlreadyUsedException;
 use App\Repository\Contract\AccountRepositoryInterface;
 use App\Service\Impl\AuthService;
-use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AuthServiceTest extends TestCase
 {
-    public function testRegisterHashesPasswordAndPersists(): void
+    public function testRegisterHashesPasswordAndSaves(): void
     {
-        $repo = $this->createStub(AccountRepositoryInterface::class);
-        $repo->method('findOneBy')->willReturn(null);
+        $repo = $this->createMock(AccountRepositoryInterface::class);
+        $repo->method('findOneByEmail')->willReturn(null);
+        $repo->expects(self::once())
+            ->method('save')
+            ->with(self::isInstanceOf(Account::class), true);
 
         $hasher = $this->createStub(UserPasswordHasherInterface::class);
         $hasher->method('hashPassword')->willReturn('hashed_value');
 
-        $em = $this->createMock(EntityManagerInterface::class);
-        $em->expects(self::once())->method('persist')->with(self::isInstanceOf(Account::class));
-        $em->expects(self::once())->method('flush');
-
-        $account = (new AuthService($em, $repo, $hasher))
+        $account = (new AuthService($repo, $hasher))
             ->register(new RegisterInput('jean@example.com', 'secret123'));
 
         self::assertSame('jean@example.com', $account->getEmail());
@@ -35,18 +33,15 @@ final class AuthServiceTest extends TestCase
 
     public function testRegisterRejectsDuplicateEmail(): void
     {
-        $repo = $this->createStub(AccountRepositoryInterface::class);
-        $repo->method('findOneBy')->willReturn(new Account());
+        $repo = $this->createMock(AccountRepositoryInterface::class);
+        $repo->method('findOneByEmail')->willReturn(new Account());
+        $repo->expects(self::never())->method('save');
 
         $hasher = $this->createStub(UserPasswordHasherInterface::class);
 
-        $em = $this->createMock(EntityManagerInterface::class);
-        $em->expects(self::never())->method('persist');
-        $em->expects(self::never())->method('flush');
-
         $this->expectException(EmailAlreadyUsedException::class);
 
-        (new AuthService($em, $repo, $hasher))
+        (new AuthService($repo, $hasher))
             ->register(new RegisterInput('jean@example.com', 'secret123'));
     }
 }

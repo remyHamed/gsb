@@ -25,6 +25,9 @@ FROM base AS dev
 ENV APP_ENV=dev \
     COMPOSER_ALLOW_SUPERUSER=1
 
+RUN pecl install pcov \
+    && docker-php-ext-enable pcov
+
 CMD ["php-fpm"]
 
 FROM base AS prod
