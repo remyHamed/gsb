@@ -1,7 +1,7 @@
 <?php
 namespace App\Entity;
 
-use App\Repository\EmployeeRepository;
+use App\Repository\Impl\EmployeeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;

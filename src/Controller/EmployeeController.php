@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Dto\EmployeeInput;
 use App\Entity\Employee;
-use App\Repository\EmployeeRepository;
+use App\Repository\Contract\EmployeeRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class EmployeeController extends AbstractController
 {
     #[Route('', name: 'api_employee_index', methods: ['GET'])]
-    public function index(EmployeeRepository $repository): JsonResponse
+    public function index(EmployeeRepositoryInterface $repository): JsonResponse
     {
         return $this->json(array_map($this->toArray(...), $repository->findAll()));
     }
