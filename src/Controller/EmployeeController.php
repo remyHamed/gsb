@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Dto\EmployeeInput;
 use App\Entity\Employee;
-use App\Repository\Contract\EmployeeRepositoryInterface;
+use App\Service\Contract\EmployeeServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,10 +15,20 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/employees')]
 final class EmployeeController extends AbstractController
 {
-    #[Route('', name: 'api_employee_index', methods: ['GET'])]
-    public function index(EmployeeRepositoryInterface $repository): JsonResponse
+    public function __construct(private readonly EmployeeServiceInterface $employees)
     {
-        return $this->json(array_map($this->toArray(...), $repository->findAll()));
+    }
+
+    #[Route('', name: 'api_employee_index', methods: ['GET'])]
+    public function index(): JsonResponse
+    {
+        return $this->json(array_map($this->toArray(...), $this->employees->findAll()));
+    }
+
+    #[Route('/active', name: 'api_employee_active', methods: ['GET'])]
+    public function active(): JsonResponse
+    {
+        return $this->json(array_map($this->toArray(...), $this->employees->findActive()));
     }
 
     #[Route('/{id}', name: 'api_employee_show', methods: ['GET'])]
