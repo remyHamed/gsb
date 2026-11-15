@@ -5,7 +5,7 @@ namespace App\Tests\Service;
 use App\Dto\RegisterInput;
 use App\Entity\Account;
 use App\Exception\EmailAlreadyUsedException;
-use App\Repository\AccountRepository;
+use App\Repository\Contract\AccountRepositoryInterface;
 use App\Service\Impl\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -15,7 +15,7 @@ final class AuthServiceTest extends TestCase
 {
     public function testRegisterHashesPasswordAndPersists(): void
     {
-        $repo = $this->createStub(AccountRepository::class);
+        $repo = $this->createStub(AccountRepositoryInterface::class);
         $repo->method('findOneBy')->willReturn(null);
 
         $hasher = $this->createStub(UserPasswordHasherInterface::class);
@@ -35,7 +35,7 @@ final class AuthServiceTest extends TestCase
 
     public function testRegisterRejectsDuplicateEmail(): void
     {
-        $repo = $this->createStub(AccountRepository::class);
+        $repo = $this->createStub(AccountRepositoryInterface::class);
         $repo->method('findOneBy')->willReturn(new Account());
 
         $hasher = $this->createStub(UserPasswordHasherInterface::class);

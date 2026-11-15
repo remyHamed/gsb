@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Repository;
+namespace App\Repository\Impl;
 
 use App\Entity\Account;
-USE App\Repository\AccountRepositoryInterface;
+use App\Repository\Contract\AccountRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -13,6 +13,11 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Account::class);
+    }
+
+    public function findOneByEmail(string $email): ?Account
+    {
+        return $this->findOneBy(['email' => $email]);
     }
 
     public function save(Account $entity, bool $flush = false): void

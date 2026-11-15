@@ -1,7 +1,7 @@
 <?php
 namespace App\Entity;
 
-use App\Repository\AccountRepository;
+use App\Repository\Impl\AccountRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;

@@ -5,9 +5,9 @@ namespace App\Service\Impl;
 use App\Entity\Account;
 use App\Dto\RegisterInput;
 use App\Exception\EmailAlreadyUsedException;
-use App\Repository\AccountRepositoryInterface;
+use App\Repository\Contract\AccountRepositoryInterface;
 use App\Service\Contract\AuthServiceInterface;
-use App\Service\Impl\AuthService;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
