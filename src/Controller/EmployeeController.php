@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Dto\EmployeeInput;
+use App\Dto\EmployeeOutput;
 use App\Entity\Employee;
 use App\Service\Contract\EmployeeServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -79,10 +80,6 @@ final class EmployeeController extends AbstractController
 
     private function toArray(Employee $employee): array
     {
-        return [
-            'id' => $employee->getId(),
-            'firstName' => $employee->getFirstName(),
-            'lastName' => $employee->getLastName(),
-        ];
+        return EmployeeOutput::toArray($employee);
     }
 }

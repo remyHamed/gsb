@@ -86,6 +86,49 @@ final class EmployeeControllerTest extends WebTestCase
         self::assertCount(2, $data);
     }
 
+    public function testIndexExposesFullEmployeeShape(): void
+    {
+        $account = (new Account())->setEmail('alice@example.com')->setPasswordHash('x');
+        $this->em->persist($account);
+
+        $employee = (new Employee())
+            ->setFirstName('Alice')
+            ->setLastName('Martin')
+            ->setDateAnciennete(new \DateTimeImmutable('2024-01-15'))
+            ->setWeeklyHours(35)
+            ->setAvailableSlots([1, 2, 3])
+            ->setDatesExclues(['2026-12-25'])
+            ->setSkills(['caisse'])
+            ->setAccount($account);
+        $this->em->persist($employee);
+        $this->em->flush();
+
+        $data = $this->jsonRequest('GET', self::BASE, token: $this->loginToken());
+        $item = $data[0];
+
+        self::assertSame('Alice', $item['firstName']);
+        self::assertSame('Martin', $item['lastName']);
+        self::assertSame('2024-01-15', $item['dateAnciennete']);
+        self::assertSame(35, $item['weeklyHours']);
+        self::assertSame([1, 2, 3], $item['availableSlots']);
+        self::assertSame(['2026-12-25'], $item['datesExclues']);
+        self::assertSame(['caisse'], $item['skills']);
+        self::assertTrue($item['isActive']);
+        self::assertSame($account->getId()->toRfc4122(), $item['accountId']);
+        self::assertArrayHasKey('id', $item);
+        self::assertArrayHasKey('createdAt', $item);
+        self::assertArrayNotHasKey('passwordHash', $item);
+        self::assertArrayNotHasKey('account', $item);
+    }
+
+    public function testIndexReturnsEmptyArrayWhenNoEmployee(): void
+    {
+        $data = $this->jsonRequest('GET', self::BASE, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame([], $data);
+    }
+
     // ---------- GET /employees/active ----------
 
     public function testActiveReturnsOnlyActiveEmployees(): void
