@@ -53,9 +53,9 @@ Chaque étape ci-dessous correspond à une branche ou une issue sur ce dépôt.
 
 ### Phase 2 : Sécurité & Authentification
 
-- [ ] UserProvider : configuration de l'entité `User` (`Account`) pour l'auth Symfony.
-- [ ] JWT : installation et configuration de `lexik/jwt-authentication-bundle` pour sécuriser les endpoints.
-- [ ] Endpoints `register` / `login` (portage direct de `AuthController` / `AuthService`).
+- [x] UserProvider : configuration de l'entité `User` (`Account`) pour l'auth Symfony.
+- [x] JWT : installation et configuration de `lexik/jwt-authentication-bundle` pour sécuriser les endpoints.
+- [x] Endpoints `register` / `login` (portage direct de `AuthController` / `AuthService`).
 
 > **Note de périmètre** : l'API source ne définit aucun CRUD complet pour `Account` (pas de liste, mise à jour, ni suppression — uniquement `register`, `login` et les lookups internes par `id`/`email`). Ce planning ne couvre donc que l'authentification ; un CRUD `Account` complet serait une nouvelle feature, hors scope ici.
 
