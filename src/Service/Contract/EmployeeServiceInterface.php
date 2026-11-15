@@ -11,4 +11,7 @@ interface EmployeeServiceInterface
 
     /** @return Employee[] */
     public function findActive(): array;
+
+    /** @throws \App\Exception\EmployeeNotFoundException */
+    public function findById(string $id): Employee;
 }

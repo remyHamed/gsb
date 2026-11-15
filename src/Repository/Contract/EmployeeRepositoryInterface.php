@@ -11,4 +11,6 @@ interface EmployeeRepositoryInterface
 
     /** @return Employee[] */
     public function findActive(): array;
+
+    public function find(mixed $id): ?object;
 }

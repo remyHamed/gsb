@@ -24,7 +24,7 @@ final class EmployeeControllerTest extends WebTestCase
         $this->em->createQuery('DELETE FROM ' . Account::class)->execute();
     }
 
-    private function seedEmployee(string $email, string $firstName, bool $active = true): void
+    private function seedEmployee(string $email, string $firstName, bool $active = true): Employee
     {
         $account = (new Account())->setEmail($email)->setPasswordHash('not-used');
         $this->em->persist($account);
@@ -38,6 +38,8 @@ final class EmployeeControllerTest extends WebTestCase
             ->setAccount($account);
         $this->em->persist($employee);
         $this->em->flush();
+
+        return $employee;
     }
 
     private function jsonRequest(string $method, string $uri, ?array $payload = null, ?string $token = null): array
@@ -141,5 +143,52 @@ final class EmployeeControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(200);
         self::assertCount(1, $data);
         self::assertSame('Alice', $data[0]['firstName']);
+    }
+
+    // ---------- GET /employees/{id} ----------
+
+    public function testShowRequiresAuthentication(): void
+    {
+        $this->jsonRequest('GET', self::BASE . '/018f0000-0000-7000-8000-000000000000');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testShowReturnsEmployeeWithFullShape(): void
+    {
+        $employee = $this->seedEmployee('alice@example.com', 'Alice');
+
+        $data = $this->jsonRequest('GET', self::BASE . '/' . $employee->getId()->toRfc4122(), token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame($employee->getId()->toRfc4122(), $data['id']);
+        self::assertSame('Alice', $data['firstName']);
+        self::assertSame(35, $data['weeklyHours']);
+        self::assertSame($employee->getAccount()->getId()->toRfc4122(), $data['accountId']);
+        self::assertTrue($data['isActive']);
+    }
+
+    public function testShowReturnsInactiveEmployeeToo(): void
+    {
+        $employee = $this->seedEmployee('bob@example.com', 'Bob', false);
+
+        $data = $this->jsonRequest('GET', self::BASE . '/' . $employee->getId()->toRfc4122(), token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertFalse($data['isActive']);
+    }
+
+    public function testShowUnknownIdReturns404(): void
+    {
+        $this->jsonRequest('GET', self::BASE . '/018f0000-0000-7000-8000-000000000000', token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testShowMalformedIdReturns404(): void
+    {
+        $this->jsonRequest('GET', self::BASE . '/not-a-uuid', token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
     }
 }

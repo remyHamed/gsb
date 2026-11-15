@@ -23,19 +23,19 @@ final class EmployeeController extends AbstractController
     #[Route('', name: 'api_employee_index', methods: ['GET'])]
     public function index(): JsonResponse
     {
-        return $this->json(array_map($this->toArray(...), $this->employees->findAll()));
+        return $this->json(array_map(EmployeeOutput::toArray(...), $this->employees->findAll()));
     }
 
     #[Route('/active', name: 'api_employee_active', methods: ['GET'])]
     public function active(): JsonResponse
     {
-        return $this->json(array_map($this->toArray(...), $this->employees->findActive()));
+        return $this->json(array_map(EmployeeOutput::toArray(...), $this->employees->findActive()));
     }
 
     #[Route('/{id}', name: 'api_employee_show', methods: ['GET'])]
-    public function show(Employee $employee): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        return $this->json($this->toArray($employee));
+        return $this->json(EmployeeOutput::toArray($this->employees->findById($id)));
     }
 
     #[Route('', name: 'api_employee_create', methods: ['POST'])]
@@ -48,7 +48,7 @@ final class EmployeeController extends AbstractController
         $em->persist($employee);
         $em->flush();
 
-        return $this->json($this->toArray($employee), Response::HTTP_CREATED);
+        return $this->json(EmployeeOutput::toArray($employee), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'api_employee_update', methods: ['PUT'])]
@@ -60,7 +60,7 @@ final class EmployeeController extends AbstractController
         $this->hydrate($employee, $input);
         $em->flush();
 
-        return $this->json($this->toArray($employee));
+        return $this->json(EmployeeOutput::toArray($employee));
     }
 
     #[Route('/{id}', name: 'api_employee_delete', methods: ['DELETE'])]
@@ -78,8 +78,4 @@ final class EmployeeController extends AbstractController
         $employee->setLastName($input->lastName);
     }
 
-    private function toArray(Employee $employee): array
-    {
-        return EmployeeOutput::toArray($employee);
-    }
 }

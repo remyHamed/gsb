@@ -3,6 +3,7 @@
 namespace App\Tests\Service;
 
 use App\Entity\Employee;
+use App\Exception\EmployeeNotFoundException;
 use App\Repository\Contract\EmployeeRepositoryInterface;
 use App\Service\Impl\EmployeeService;
 use PHPUnit\Framework\TestCase;
@@ -35,5 +36,41 @@ final class EmployeeServiceTest extends TestCase
         $repo->method('findActive')->willReturn([]);
 
         self::assertSame([], (new EmployeeService($repo))->findActive());
+    }
+
+    public function testFindByIdReturnsEmployee(): void
+    {
+        $employee = new Employee();
+
+        $repo = $this->createMock(EmployeeRepositoryInterface::class);
+        $repo->expects(self::once())
+            ->method('find')
+            ->with('018f0000-0000-7000-8000-000000000001')
+            ->willReturn($employee);
+
+        self::assertSame(
+            $employee,
+            (new EmployeeService($repo))->findById('018f0000-0000-7000-8000-000000000001'),
+        );
+    }
+
+    public function testFindByIdThrowsWhenEmployeeDoesNotExist(): void
+    {
+        $repo = $this->createStub(EmployeeRepositoryInterface::class);
+        $repo->method('find')->willReturn(null);
+
+        $this->expectException(EmployeeNotFoundException::class);
+
+        (new EmployeeService($repo))->findById('018f0000-0000-7000-8000-000000000001');
+    }
+
+    public function testFindByIdThrowsOnMalformedIdWithoutQueryingRepository(): void
+    {
+        $repo = $this->createMock(EmployeeRepositoryInterface::class);
+        $repo->expects(self::never())->method('find');
+
+        $this->expectException(EmployeeNotFoundException::class);
+
+        (new EmployeeService($repo))->findById('not-a-uuid');
     }
 }
