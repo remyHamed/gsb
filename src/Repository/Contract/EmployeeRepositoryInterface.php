@@ -12,5 +12,26 @@ interface EmployeeRepositoryInterface
     /** @return Employee[] */
     public function findActive(): array;
 
-    public function find(mixed $id): ?object;
+    public function findById(Uuid $id): ?Employee;
+
+    public function existsDuplicate(
+        Uuid $accountId,
+        string $firstName,
+        string $lastName,
+        \DateTimeImmutable $seniorityDate,
+        ?Uuid $excludeId = null,
+    ): bool;
+
+    /** @throws EmployeeAlreadyExistsException */
+    public function save(Employee $employee): void;
+
+    public function remove(Employee $employee): void;
+    
+    public function existsByAccount(Uuid $accountId): bool;
+
+    /** @throws EmployeeAlreadyExistsException */
+    public function save(Employee $employee): void;
+
+    /** @throws EmployeeInUseException */
+    public function remove(Employee $employee): void;
 }

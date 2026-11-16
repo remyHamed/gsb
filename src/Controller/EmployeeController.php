@@ -4,9 +4,7 @@ namespace App\Controller;
 
 use App\Dto\EmployeeInput;
 use App\Dto\EmployeeOutput;
-use App\Entity\Employee;
 use App\Service\Contract\EmployeeServiceInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,43 +37,26 @@ final class EmployeeController extends AbstractController
     }
 
     #[Route('', name: 'api_employee_create', methods: ['POST'])]
-    public function create(
-        #[MapRequestPayload] EmployeeInput $input,
-        EntityManagerInterface $em,
-    ): JsonResponse {
-        $employee = new Employee();
-        $this->hydrate($employee, $input);
-        $em->persist($employee);
-        $em->flush();
+    public function create(#[MapRequestPayload] EmployeeInput $input): JsonResponse
+    {
+        $employee = $this->employees->create($input);
 
         return $this->json(EmployeeOutput::toArray($employee), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'api_employee_update', methods: ['PUT'])]
-    public function update(
-        Employee $employee,
-        #[MapRequestPayload] EmployeeInput $input,
-        EntityManagerInterface $em,
-    ): JsonResponse {
-        $this->hydrate($employee, $input);
-        $em->flush();
+    public function update(string $id, #[MapRequestPayload] EmployeeInput $input): JsonResponse
+    {
+        $employee = $this->employees->update($id, $input);
 
         return $this->json(EmployeeOutput::toArray($employee));
     }
 
     #[Route('/{id}', name: 'api_employee_delete', methods: ['DELETE'])]
-    public function delete(Employee $employee, EntityManagerInterface $em): JsonResponse
+    public function delete(string $id): JsonResponse
     {
-        $em->remove($employee);
-        $em->flush();
+        $this->employees->delete($id);
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
-
-    private function hydrate(Employee $employee, EmployeeInput $input): void
-    {
-        $employee->setFirstName($input->firstName);
-        $employee->setLastName($input->lastName);
-    }
-
 }

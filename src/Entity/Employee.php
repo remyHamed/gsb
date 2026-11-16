@@ -8,6 +8,7 @@ use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
+#[ORM\UniqueConstraint(name: 'uniq_employee_identity', columns: ['account_id', 'first_name', 'last_name', 'date_anciennete'])]
 #[ORM\Table(name: 'employees')]
 class Employee
 {

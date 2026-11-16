@@ -1,0 +1,2 @@
+ // TODO (quand Shift.php sera partagé) : un employé référencé par un Shift
+    // -> remove() doit lever EmployeeInUseException (violation de clé étrangère traduite).

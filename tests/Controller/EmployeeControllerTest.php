@@ -191,4 +191,82 @@ final class EmployeeControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
     }
+    public function testCreateRequiresAuthentication(): void
+    {
+        $this->jsonRequest('POST', self::BASE, [
+            'firstName' => 'Coreli',
+            'lastName' => 'Martin',
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCreateEmployeeSuccessfully(): void
+    {
+        // We need an existing account to link the employee to
+        $account = (new Account())->setEmail('coreli@example.com')->setPasswordHash('x');
+        $this->em->persist($account);
+        $this->em->flush();
+
+        $payload = [
+            'firstName' => 'Coreli',
+            'lastName' => 'Martin',
+            'dateAnciennete' => '2026-07-13',
+            'weeklyHours' => 20,
+            'joursDisponibles' => [1, 2, 3, 4, 5],
+            'datesExclues' => [],
+            'skills' => ['php', 'symfony'],
+            'accountId' => $account->getId()->toRfc4122(),
+        ];
+
+        $data = $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('Coreli', $data['firstName']);
+        self::assertSame('Martin', $data['lastName']);
+        self::assertSame('2026-07-13', $data['dateAnciennete']);
+        self::assertSame(20, $data['weeklyHours']);
+        self::assertSame($account->getId()->toRfc4122(), $data['accountId']);
+    }
+
+    // ---------- PUT /employees/{id} ----------
+
+    public function testUpdateEmployeeSuccessfully(): void
+    {
+        $employee = $this->seedEmployee('update@example.com', 'OldName');
+        $accountId = $employee->getAccount()->getId()->toRfc4122();
+
+        $payload = [
+            'firstName' => 'NewName',
+            'lastName' => 'Updated',
+            'dateAnciennete' => '2024-01-01',
+            'weeklyHours' => 35,
+            'joursDisponibles' => [1, 2],
+            'datesExclues' => [],
+            'skills' => ['testing'],
+            'accountId' => $accountId,
+        ];
+
+        $data = $this->jsonRequest('PUT', self::BASE . '/' . $employee->getId()->toRfc4122(), $payload, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame('NewName', $data['firstName']);
+        self::assertSame('Updated', $data['lastName']);
+    }
+
+    // ---------- DELETE /employees/{id} ----------
+
+    public function testDeleteEmployeeSuccessfully(): void
+    {
+        $employee = $this->seedEmployee('delete@example.com', 'ToDelete');
+        $employeeId = $employee->getId()->toRfc4122();
+
+        $this->jsonRequest('DELETE', self::BASE . '/' . $employeeId, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(204);
+
+        // Verify it's actually gone
+        $this->jsonRequest('GET', self::BASE . '/' . $employeeId, token: $this->loginToken());
+        self::assertResponseStatusCodeSame(404);
+    }   
 }
