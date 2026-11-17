@@ -22,33 +22,49 @@ final class EmployeeServiceTest extends TestCase
     private const ACCOUNT_ID = '018f0000-0000-7000-8000-0000000000a1';
     private const OTHER_ACCOUNT_ID = '018f0000-0000-7000-8000-0000000000b2';
 
-    private EmployeeRepositoryInterface&MockObject $employees;
-    private AccountRepositoryInterface&MockObject $accounts;
+    private EmployeeRepositoryInterface|MockObject $employees;
+    private AccountRepositoryInterface|MockObject $accounts;
     private EmployeeService $service;
 
     protected function setUp(): void
     {
         $this->employees = $this->createMock(EmployeeRepositoryInterface::class);
         $this->accounts = $this->createMock(AccountRepositoryInterface::class);
-        $this->service = new EmployeeService($this->employees, $this->accounts);
+
+        $this->service = new EmployeeService(
+            $this->employees,
+            $this->accounts
+        );
     }
 
     // ---------- Fixtures (seul endroit à adapter quand l'entité / le DTO changent) ----------
 
-    private function account(): Account
+    private function account(?string $id = null): Account
     {
-        return (new Account())->setEmail('alice@example.com')->setPasswordHash('x');
+        $account = (new Account())
+            ->setEmail('alice@example.com')
+            ->setPasswordHash('x');
+
+        // L'id est normalement généré par Doctrine : on le force par réflexion.
+        (new \ReflectionProperty(Account::class, 'id'))
+            ->setValue($account, $id !== null ? Uuid::fromString($id) : Uuid::v7());
+
+        return $account;
     }
 
     private function employee(bool $active = true): Employee
     {
-        return (new Employee())
-            ->setFirstName('Alice')
-            ->setLastName('Martin')
-            ->setDateAnciennete(new \DateTimeImmutable('2024-01-01'))
-            ->setWeeklyHours(35)
-            ->setIsActive($active)
-            ->setAccount($this->account());
+        $employee = new Employee(
+            $this->account(),
+            'Alice',
+            'Martin',
+            new \DateTimeImmutable('2024-01-01'),
+            35
+        );
+
+        $employee->setIsActive($active);
+
+        return $employee;
     }
 
     private function input(array $overrides = []): EmployeeInput
@@ -118,7 +134,7 @@ final class EmployeeServiceTest extends TestCase
 
     public function testCreatePersistsActiveEmployeeLinkedToAccount(): void
     {
-        $account = $this->account();
+        $account = $this->account(self::ACCOUNT_ID);
         $this->accounts->method('findById')->with(Uuid::fromString(self::ACCOUNT_ID))->willReturn($account);
         $this->employees->method('existsByAccount')->willReturn(false);
 
@@ -151,7 +167,7 @@ final class EmployeeServiceTest extends TestCase
 
     public function testCreateThrowsWhenAccountAlreadyHasAnEmployee(): void
     {
-        $this->accounts->method('findById')->willReturn($this->account());
+        $this->accounts->method('findById')->willReturn($this->account(self::ACCOUNT_ID));
         $this->employees->method('existsByAccount')
             ->with(Uuid::fromString(self::ACCOUNT_ID))
             ->willReturn(true);

@@ -49,10 +49,20 @@ class Employee
     #[ORM\JoinColumn(name: 'account_id', nullable: false, unique: true)]
     private Account $account;
 
-    public function __construct()
-    {
-        $this->createdAt = new \DateTimeImmutable();
-    }
+public function __construct(
+    Account $account,
+    string $firstName,
+    string $lastName,
+    \DateTimeImmutable $dateAnciennete,
+    int $weeklyHours
+) {
+    $this->account = $account;
+    $this->firstName = $firstName;
+    $this->lastName = $lastName;
+    $this->dateAnciennete = $dateAnciennete;
+    $this->weeklyHours = $weeklyHours;
+    $this->createdAt = new \DateTimeImmutable();
+}
 
     public function getId(): ?Uuid
     {
@@ -175,6 +185,40 @@ class Employee
     public function setAccount(Account $account): static
     {
         $this->account = $account;
+
+        return $this;
+    }
+
+    public function update(
+        string $firstName,
+        string $lastName,
+        \DateTimeImmutable $dateAnciennete,
+        int $weeklyHours,
+        array $availableSlots,
+        array $datesExclues,
+        array $skills
+    ): self {
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->dateAnciennete = $dateAnciennete;
+        $this->weeklyHours = $weeklyHours;
+        $this->availableSlots = $availableSlots;
+        $this->datesExclues = $datesExclues;
+        $this->skills = $skills;
+
+        return $this;
+    }
+
+    public function deactivate(): self
+    {
+        $this->isActive = false;
+
+        return $this;
+    }
+
+    public function activate(): self
+    {
+        $this->isActive = true;
 
         return $this;
     }

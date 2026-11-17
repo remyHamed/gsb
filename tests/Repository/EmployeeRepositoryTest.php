@@ -39,13 +39,17 @@ final class EmployeeRepositoryTest extends KernelTestCase
 
     private function employee(Account $account, string $firstName, string $lastName, bool $active = true): Employee
     {
-        return (new Employee())
-            ->setFirstName($firstName)
-            ->setLastName($lastName)
-            ->setDateAnciennete(new \DateTimeImmutable('2024-01-01'))
-            ->setWeeklyHours(35)
-            ->setIsActive($active)
-            ->setAccount($account);
+        $employee = new Employee(
+            $account,
+            $firstName,
+            $lastName,
+            new \DateTimeImmutable('2024-01-01'),
+            35
+        );
+        
+        $employee->setIsActive($active);
+
+        return $employee;
     }
 
     // ---------- Tests ----------
@@ -98,11 +102,11 @@ final class EmployeeRepositoryTest extends KernelTestCase
         $accountId = $account->getId();
 
         $this->repository->remove($employee);
-        $this->em->clear(); // on relit la base, pas l'identity map
+        $this->em->clear();
 
         self::assertNull($this->repository->findById($employeeId));
         self::assertNotNull($this->em->find(Account::class, $accountId));
     }
 
-   
+    
 }

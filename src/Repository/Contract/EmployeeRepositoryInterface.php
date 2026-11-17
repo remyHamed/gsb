@@ -3,6 +3,7 @@
 namespace App\Repository\Contract;
 
 use App\Entity\Employee;
+use Symfony\Component\Uid\Uuid;
 
 interface EmployeeRepositoryInterface
 {
@@ -14,21 +15,10 @@ interface EmployeeRepositoryInterface
 
     public function findById(Uuid $id): ?Employee;
 
-    public function existsDuplicate(
-        Uuid $accountId,
-        string $firstName,
-        string $lastName,
-        \DateTimeImmutable $seniorityDate,
-        ?Uuid $excludeId = null,
-    ): bool;
+    public function existsDuplicate(Uuid $accountId, string $firstName, string $lastName, \DateTimeImmutable $dateAnciennete, ?Uuid $excludeId): bool;
 
-    /** @throws EmployeeAlreadyExistsException */
-    public function save(Employee $employee): void;
-
-    public function remove(Employee $employee): void;
-    
     public function existsByAccount(Uuid $accountId): bool;
-
+    
     /** @throws EmployeeAlreadyExistsException */
     public function save(Employee $employee): void;
 

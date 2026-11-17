@@ -5,7 +5,12 @@ namespace App\Repository\Impl;
 use App\Entity\Employee;
 use App\Repository\Contract\EmployeeRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Uuid;
+use App\Exception\EmployeeAlreadyExistsException;
 
 /** @extends ServiceEntityRepository<Employee> */
 class EmployeeRepository extends ServiceEntityRepository implements EmployeeRepositoryInterface
@@ -53,7 +58,25 @@ class EmployeeRepository extends ServiceEntityRepository implements EmployeeRepo
         try {
             $em->flush();
         } catch (UniqueConstraintViolationException $e) {
-            throw new EmployeeAlreadyExistsException('Employee already exists.', 0, $e);
+            throw new EmployeeAlreadyExistsException('Employee already exists.', $e);
         }
     }
+
+    public function existsByAccount(Uuid $accountId): bool
+    {
+        return $this->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->innerJoin('e.account', 'a')
+            ->andWhere('a.id = :accountId')
+            ->setParameter('accountId', $accountId, UuidType::NAME)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
+    }
+
+    public function remove(Employee $employee): void
+    {
+        $this->getEntityManager()->remove($employee);
+        $this->getEntityManager()->flush();
+    }
+
 }

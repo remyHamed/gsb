@@ -24,18 +24,115 @@ final class EmployeeControllerTest extends WebTestCase
         $this->em->createQuery('DELETE FROM ' . Account::class)->execute();
     }
 
-    private function seedEmployee(string $email, string $firstName, bool $active = true): Employee
+    public function testCreateEmployeeDuplicateAccountReturnsConflict(): void
+    {
+        $account = (new Account())->setEmail('duplicate@example.com')->setPasswordHash('x');
+        $this->em->persist($account);
+        $this->em->flush();
+
+        $payload = [
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'dateAnciennete' => '2026-07-13',
+            'weeklyHours' => 35,
+            'joursDisponibles' => [1, 2, 3],
+            'datesExclues' => [],
+            'skills' => ['php'],
+            'accountId' => $account->getId()->toRfc4122(),
+        ];
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+        self::assertResponseStatusCodeSame(201);
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+        self::assertResponseStatusCodeSame(409);
+    }
+
+    public function testCreateEmployeeValidationFailedWithInvalidUuid(): void
+    {
+        $payload = [
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'dateAnciennete' => '2026-07-13',
+            'weeklyHours' => 35,
+            'joursDisponibles' => [1, 2],
+            'datesExclues' => [],
+            'skills' => [],
+            'accountId' => 'ce-nest-pas-un-uuid',
+        ];
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+        
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateEmployeeValidationFailedMissingFields(): void
+    {
+        $payload = [
+            'firstName' => '',
+            'weeklyHours' => -5,
+        ];
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateEmployeeValidationFailedInvalidDate(): void
+    {
+        $account = (new Account())->setEmail('date-test@example.com')->setPasswordHash('x');
+        $this->em->persist($account);
+        $this->em->flush();
+
+        $payload = [
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'dateAnciennete' => '13-07-2026',
+            'weeklyHours' => 35,
+            'joursDisponibles' => [1, 2],
+            'datesExclues' => [],
+            'skills' => ['php'],
+            'accountId' => $account->getId()->toRfc4122(),
+        ];
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateEmployeeWithUnknownAccountReturnsNotFoundError(): void
+    {
+        $payload = [
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'dateAnciennete' => '2026-07-13',
+            'weeklyHours' => 35,
+            'joursDisponibles' => [1, 2],
+            'datesExclues' => [],
+            'skills' => ['php'],
+            'accountId' => '018f0000-0000-7000-8000-000000009999',
+        ];
+
+        $this->jsonRequest('POST', self::BASE, $payload, token: $this->loginToken());
+
+        self::assertContains($this->client->getResponse()->getStatusCode(), [404, 422]);
+    }
+
+private function seedEmployee(string $email, string $firstName, bool $active = true): Employee
     {
         $account = (new Account())->setEmail($email)->setPasswordHash('not-used');
         $this->em->persist($account);
 
-        $employee = (new Employee())
-            ->setFirstName($firstName)
-            ->setLastName('Test')
-            ->setDateAnciennete(new \DateTimeImmutable('2024-01-01'))
-            ->setWeeklyHours(35)
-            ->setIsActive($active)
-            ->setAccount($account);
+        $employee = new Employee(
+            $account,
+            $firstName,
+            'Test',
+            new \DateTimeImmutable('2024-01-01'),
+            35
+        );
+        
+        $employee->setIsActive($active);
+
         $this->em->persist($employee);
         $this->em->flush();
 
@@ -93,15 +190,18 @@ final class EmployeeControllerTest extends WebTestCase
         $account = (new Account())->setEmail('alice@example.com')->setPasswordHash('x');
         $this->em->persist($account);
 
-        $employee = (new Employee())
-            ->setFirstName('Alice')
-            ->setLastName('Martin')
-            ->setDateAnciennete(new \DateTimeImmutable('2024-01-15'))
-            ->setWeeklyHours(35)
-            ->setAvailableSlots([1, 2, 3])
-            ->setDatesExclues(['2026-12-25'])
-            ->setSkills(['caisse'])
-            ->setAccount($account);
+        $employee = new Employee(
+            $account,
+            'Alice',
+            'Martin',
+            new \DateTimeImmutable('2024-01-15'),
+            35
+        );
+        $employee->setAvailableSlots([1, 2, 3]);
+        $employee->setDatesExclues(['2026-12-25']);
+        $employee->setSkills(['caisse']);
+        $employee->setIsActive(true);
+
         $this->em->persist($employee);
         $this->em->flush();
 

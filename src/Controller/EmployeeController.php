@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
 #[Route('/api/employees')]
 final class EmployeeController extends AbstractController
@@ -44,7 +45,7 @@ final class EmployeeController extends AbstractController
         return $this->json(EmployeeOutput::toArray($employee), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'api_employee_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'api_employee_update', requirements: ['id' => Requirement::UUID], methods: ['PUT'])]
     public function update(string $id, #[MapRequestPayload] EmployeeInput $input): JsonResponse
     {
         $employee = $this->employees->update($id, $input);

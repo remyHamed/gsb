@@ -6,8 +6,11 @@ use App\Dto\EmployeeInput;
 use App\Entity\Account;
 use App\Entity\Employee;
 use App\Exception\EmployeeNotFoundException;
+use App\Exception\AccountNotFoundException;
+use App\Exception\EmployeeAlreadyExistsException;
 use App\Repository\Contract\EmployeeRepositoryInterface;
 use App\Service\Contract\EmployeeServiceInterface;
+use App\Repository\Contract\AccountRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Uid\Uuid;
@@ -15,38 +18,52 @@ use Symfony\Component\Uid\Uuid;
 class EmployeeService implements EmployeeServiceInterface
 {
     public function __construct(
-        private readonly EmployeeRepositoryInterface $employees,
-        private readonly EntityManagerInterface $em, // Replace with AccountRepositoryInterface once created
-    ) {
-    }
+        private readonly EmployeeRepositoryInterface $employeeRepository,
+        private readonly AccountRepositoryInterface $accountRepository,
+    ) {}
 
     public function findAll(): array
     {
-        return $this->employees->findAll();
+        return $this->employeeRepository->findAll();
     }
 
     public function findActive(): array
     {
-        return $this->employees->findActive();
+        return $this->employeeRepository->findActive();
     }
 
     public function findById(string $id): Employee
     {
-        $employee = Uuid::isValid($id) ? $this->employees->findById(Uuid::fromString($id)) : null;
+        $employee = Uuid::isValid($id) ? $this->employeeRepository->findById(Uuid::fromString($id)) : null;
 
         return $employee ?? throw new EmployeeNotFoundException($id);
     }
 
     public function create(EmployeeInput $input): Employee
     {
-        $account = $this->accounts->findById(Uuid::fromString($input->accountId))
-            ?? throw new AccountNotFoundException($input->accountId);
+        $account = $this->accountRepository->findById(Uuid::fromString($input->accountId))?? throw new AccountNotFoundException($input->accountId);
+
+        $accountId = $account->getId();
+        if ($accountId !== null && $this->employeeRepository->existsByAccount($accountId)) {
+            throw new EmployeeAlreadyExistsException('Employee already exists for this account.');
+        }
 
         $seniority = new \DateTimeImmutable($input->dateAnciennete);
         $this->assertNoDuplicate($account, $input, $seniority, null);
 
-        $employee = new Employee($account, $input->firstName, $input->lastName, $seniority /* ... */);
-        $this->employees->save($employee);
+        $employee = new Employee(
+            $account,
+            $input->firstName,
+            $input->lastName,
+            $seniority,
+            $input->weeklyHours
+        );
+
+        $employee->setAvailableSlots($input->joursDisponibles ?? []);
+        $employee->setDatesExclues($input->datesExclues ?? []);
+        $employee->setSkills($input->skills ?? []);
+
+        $this->employeeRepository->save($employee);
 
         return $employee;
     }
@@ -56,10 +73,24 @@ class EmployeeService implements EmployeeServiceInterface
         $employee = $this->findById($id);
         $seniority = new \DateTimeImmutable($input->dateAnciennete);
 
-        $this->assertNoDuplicate($employee->getAccount(), $input, $seniority, $employee->getId());
+        $account = $employee->getAccount();
+        if (!$account) {
+            throw new AccountNotFoundException('Account not found for this employee.');
+        }
 
-        $employee->update($input->firstName, $input->lastName, $seniority /* ... */);
-        $this->employees->save($employee);
+        $this->assertNoDuplicate($account, $input, $seniority, $employee->getId());
+
+        $employee->update(
+            $input->firstName,
+            $input->lastName,
+            $seniority,
+            $input->weeklyHours,
+            $input->joursDisponibles ?? [],
+            $input->datesExclues ?? [],
+            $input->skills ?? []
+        );
+
+        $this->employeeRepository->save($employee);
 
         return $employee;
     }
@@ -67,13 +98,41 @@ class EmployeeService implements EmployeeServiceInterface
     public function delete(string $id): void
     {
         $employee = $this->findById($id);
-        $this->employees->remove($employee);
+        $this->employeeRepository->remove($employee);
     }
 
     private function assertNoDuplicate(Account $account, EmployeeInput $input, \DateTimeImmutable $seniority, ?Uuid $excludeId): void
     {
-        if ($this->employees->existsDuplicate($account->getId(), $input->firstName, $input->lastName, $seniority, $excludeId)) {
-            throw new EmployeeAlreadyExistsException('Employee already exists.');
+        $accountId = $account->getId();
+        
+        if ($accountId === null) {
+            throw new \LogicException('Un compte doit obligatoirement posséder un ID valide pour vérifier les doublons.');
         }
+
+        if ($this->employeeRepository->existsDuplicate($accountId, $input->firstName, $input->lastName, $seniority, $excludeId)) {
+            throw new EmployeeAlreadyExistsException('Un employé avec les mêmes informations existe déjà.');
+        }
+    }
+    public function deactivate(string $id): Employee
+    {
+        $employee = $this->findById($id);
+
+        if ($employee->isActive()) {
+            $employee->deactivate();
+            $this->employeeRepository->save($employee);
+        }
+
+        return $employee;
+    }
+
+    public function activate(string $id): Employee
+    {
+        $employee = $this->findById($id);
+        
+        $employee->activate();
+        
+        $this->employeeRepository->save($employee);
+
+        return $employee;
     }
 }
