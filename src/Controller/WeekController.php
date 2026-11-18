@@ -2,80 +2,55 @@
 
 namespace App\Controller;
 
-use App\Entity\Week;
-use App\Form\WeekType;
-use App\Repository\WeekRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Dto\WeekInput;
+use App\Dto\WeekOutput;
+use App\Service\Contract\WeekServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
-#[Route('/week')]
+#[Route('/api/weeks')]
 final class WeekController extends AbstractController
 {
-    #[Route(name: 'app_week_index', methods: ['GET'])]
-    public function index(WeekRepository $weekRepository): Response
+    public function __construct(private readonly WeekServiceInterface $weeks)
     {
-        return $this->render('week/index.html.twig', [
-            'weeks' => $weekRepository->findAll(),
-        ]);
     }
 
-    #[Route('/new', name: 'app_week_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('', name: 'api_week_index', methods: ['GET'])]
+    public function index(): JsonResponse
     {
-        $week = new Week();
-        $form = $this->createForm(WeekType::class, $week);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($week);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_week_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('week/new.html.twig', [
-            'week' => $week,
-            'form' => $form,
-        ]);
+        return $this->json(array_map(WeekOutput::toArray(...), $this->weeks->findAll()));
     }
 
-    #[Route('/{id}', name: 'app_week_show', methods: ['GET'])]
-    public function show(Week $week): Response
+    #[Route('/{id}', name: 'api_week_show', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
+    public function show(string $id): JsonResponse
     {
-        return $this->render('week/show.html.twig', [
-            'week' => $week,
-        ]);
+        return $this->json(WeekOutput::toArray($this->weeks->findById($id)));
     }
 
-    #[Route('/{id}/edit', name: 'app_week_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Week $week, EntityManagerInterface $entityManager): Response
+    #[Route('', name: 'api_week_create', methods: ['POST'])]
+    public function create(#[MapRequestPayload] WeekInput $input): JsonResponse
     {
-        $form = $this->createForm(WeekType::class, $week);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_week_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('week/edit.html.twig', [
-            'week' => $week,
-            'form' => $form,
-        ]);
+        return $this->json(
+            WeekOutput::toArray($this->weeks->create($input)),
+            Response::HTTP_CREATED
+        );
     }
 
-    #[Route('/{id}', name: 'app_week_delete', methods: ['POST'])]
-    public function delete(Request $request, Week $week, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}', name: 'api_week_update', requirements: ['id' => Requirement::UUID], methods: ['PUT'])]
+    public function update(string $id, #[MapRequestPayload] WeekInput $input): JsonResponse
     {
-        if ($this->isCsrfTokenValid('delete'.$week->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($week);
-            $entityManager->flush();
-        }
+        return $this->json(WeekOutput::toArray($this->weeks->update($id, $input)));
+    }
 
-        return $this->redirectToRoute('app_week_index', [], Response::HTTP_SEE_OTHER);
+    #[Route('/{id}', name: 'api_week_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
+    public function delete(string $id): JsonResponse
+    {
+        $this->weeks->delete($id);
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }
