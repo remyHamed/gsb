@@ -1,5 +1,2 @@
  // TODO (quand Shift.php sera partagé) : un employé référencé par un Shift
     // -> remove() doit lever EmployeeInUseException (violation de clé étrangère traduite).
-
-    docker compose exec app php bin/phpunit tests/Service/EmployeeServiceTest.php
-docker compose exec app php bin/phpunit tests/Controller/EmployeeControllerTest.php

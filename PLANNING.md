@@ -63,10 +63,10 @@ Chaque étape ci-dessous correspond à une branche ou une issue sur ce dépôt.
 
 Reprend fidèlement les endpoints exposés par `EmployeeController` / `employeeRoutes.js` dans l'API TypeScript source.
 
-- [ ] `GET /employees` : liste complète des employés.
+- [x] `GET /employees` : liste complète des employés.
 - [ ] `GET /employees/active` : liste filtrée sur `isActive = true`.
 - [ ] `GET /employees/{id}` : détail d'un employé (404 si absent).
-- [ ] `POST /employees` : création, avec liaison obligatoire à un `Account` existant (`accountId`) et vérification qu'un `Account` n'est pas déjà lié à un employé.
+- [x] `POST /employees` : création, avec liaison obligatoire à un `Account` existant (`accountId`) et vérification qu'un `Account` n'est pas déjà lié à un employé.
 - [ ] `PUT /employees/{id}` : mise à jour partielle (nom, `weeklyHours`, `joursDisponibles`, `datesExclues`, `skills`).
 - [ ] `PATCH /employees/{id}/deactivate` : désactivation (soft delete via `isActive`).
 - [ ] Portage des enums `Role` (ADMIN, EMPLOYEE, MANAGER) et `DayOfWeek` (0-6) en PHP (enums natifs Symfony 8+).
