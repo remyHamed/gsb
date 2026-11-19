@@ -2,6 +2,9 @@
 
 namespace App\Exception;
 
+use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
+
+#[WithHttpStatus(409)]
 final class WeekOverlapException extends \DomainException
 {
     public function __construct(\DateTimeImmutable $start, \DateTimeImmutable $end)

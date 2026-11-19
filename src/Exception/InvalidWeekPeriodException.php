@@ -2,6 +2,9 @@
 
 namespace App\Exception;
 
+use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
+
+#[WithHttpStatus(422)]
 final class InvalidWeekPeriodException extends \DomainException
 {
     public static function invalidDate(string $value): self
