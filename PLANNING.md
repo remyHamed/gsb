@@ -2,7 +2,7 @@
 
 Ce document détaille le planning et la méthodologie suivis pour la refonte de l'API [gensceduleback](https://gitlab.com/remyHamed/gensceduleback), initialement écrite en TypeScript, vers une architecture Symfony (PHP).
 
-> **Périmètre** : ce planning couvre la migration à parité de fonctionnalités avec l'API TypeScript existante (Auth + module Employee). L'ajout de nouvelles features ou de nouvelles routes/CRUD fait l'objet d'itérations et d'issues ultérieures, hors du scope de ce document.
+> **Périmètre** : ce planning couvre la migration à parité de fonctionnalités avec l'API TypeScript existante (Auth + module Employee). L'ajout de nouvelles features ou de nouvelles routes/CRUD fait l'objet d'itérations et d'issues ultérieures, hors du scope de la parité (voir Phase 4 : module `Week`, première de ces itérations).
 
 ## 1. Diagramme de Gantt (Planning prévisionnel)
 
@@ -26,13 +26,20 @@ gantt
     Configuration JWT (LexikBundle)  :auth2, after auth1, 2d
 
     section 3. Module Employee (CRUD métier)
-    Endpoint GET liste + actifs       :c1, after auth2, 2d
-    Endpoint GET par ID              :c2, after c1, 1d
-    Endpoint POST creation (+ lien Account) :c3, after c2, 2d
-    Endpoint PUT mise a jour          :c4, after c3, 2d
+    Endpoint GET liste + actifs       :done, c1, after auth2, 2d
+    Endpoint GET par ID              :done, c2, after c1, 1d
+    Endpoint POST creation (+ lien Account) :done, c3, after c2, 2d
+    Endpoint PUT mise a jour          :done, c4, after c3, 2d
     Endpoint PATCH desactivation      :c5, after c4, 1d
     Regles metier (disponibilites, skills) :c6, after c5, 2d
-    Tests Unitaires & Fonctionnels (PHPUnit) :c7, after c6, 3d
+    Tests Unitaires & Fonctionnels (PHPUnit) :done, c7, after c6, 3d
+
+    section 4. Module Week (nouvelle feature)
+    CRUD Week (service, repository, controller) :done, w1, 2026-11-16, 2d
+    Validation ISO & anti-chevauchement         :done, w2, after w1, 2d
+    Mapping HTTP des exceptions (422 / 409)     :done, w3, after w2, 1d
+    Tests contrôleur (422 / 409)                :done, w4, after w3, 1d
+    Module Shift (max 2/jour, 14/semaine)       :w5, after w4, 3d
 ```
 
 ## 2. Roadmap et Découpage des Tâches
@@ -64,14 +71,29 @@ Chaque étape ci-dessous correspond à une branche ou une issue sur ce dépôt.
 Reprend fidèlement les endpoints exposés par `EmployeeController` / `employeeRoutes.js` dans l'API TypeScript source.
 
 - [x] `GET /employees` : liste complète des employés.
-- [ ] `GET /employees/active` : liste filtrée sur `isActive = true`.
-- [ ] `GET /employees/{id}` : détail d'un employé (404 si absent).
+- [x] `GET /employees/active` : liste filtrée sur `isActive = true`.
+- [x] `GET /employees/{id}` : détail d'un employé (404 si absent).
 - [x] `POST /employees` : création, avec liaison obligatoire à un `Account` existant (`accountId`) et vérification qu'un `Account` n'est pas déjà lié à un employé.
-- [ ] `PUT /employees/{id}` : mise à jour partielle (nom, `weeklyHours`, `joursDisponibles`, `datesExclues`, `skills`).
+- [x] `PUT /employees/{id}` : mise à jour partielle (nom, `weeklyHours`, `joursDisponibles`, `datesExclues`, `skills`).
 - [ ] `PATCH /employees/{id}/deactivate` : désactivation (soft delete via `isActive`).
 - [ ] Portage des enums `Role` (ADMIN, EMPLOYEE, MANAGER) et `DayOfWeek` (0-6) en PHP (enums natifs Symfony 8+).
 - [ ] Règles métier : disponibilité d'un employé sur une date donnée (`joursDisponibles` + `datesExclues`), et matching par `skills`.
-- [ ] Tests PHPUnit : un test par endpoint + cas d'erreur (compte introuvable, compte déjà lié, employé introuvable).
+- [x] `DELETE /employees/{id}` : suppression définitive (ajout hors parité TS, `EmployeeInUseException` si l'employé est référencé).
+- [x] Tests PHPUnit : un test par endpoint + cas d'erreur (compte introuvable, compte déjà lié, employé introuvable).
+
+### Phase 4 : Module `Week` (nouvelle feature, hors parité TS)
+
+Règles métier retenues : une semaine dure 7 jours, `startDate` est le lundi ISO-8601 de `(year, weekNumber)`, un seul établissement et une seule équipe pour l'instant.
+
+- [x] CRUD `Week` : `GET /api/weeks`, `GET /api/weeks/{id}`, `POST`, `PUT`, `DELETE`.
+- [x] Unicité du couple `(year, weekNumber)` (create et update, en excluant l'id courant sur update).
+- [x] Validation de la période : format `Y-m-d`, `startDate` = lundi, `weekNumber` entre 1 et 53, semaine existante cette année-là, cohérence `year` / `weekNumber` / `startDate`.
+- [x] Interdiction de chevauchement (`WeekRepository::overlapsPeriod`), les semaines collées (S48 puis S49) restent autorisées.
+- [x] Exceptions métier : `InvalidWeekPeriodException` (422), `WeekOverlapException` (409), `WeekAlreadyExistsException` (409).
+- [x] Tests unitaires du service (`WeekServiceTest`, 13 tests).
+- [x] Tests contrôleur : `startDate` non lundi → 422, chevauchement → 409.
+- [ ] Module `Shift` : date comprise dans la semaine, 2 shifts max par jour, 14 max par semaine.
+- [ ] Règles à trancher : modification de `startDate` d'une `Week` ayant déjà des `Shift`, suppression d'une `Week` avec `Shift` (cascade ou blocage).
 
 ## 3. Definition of Done
 
