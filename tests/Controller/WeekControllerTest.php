@@ -18,11 +18,11 @@ final class WeekControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $em = static::getContainer()->get('doctrine')->getManager();
+        $this->em = static::getContainer()->get('doctrine')->getManager();
 
-        $em->createQuery('DELETE FROM App\Entity\Employee')->execute();
-        $em->createQuery('DELETE FROM App\Entity\Week')->execute();
-        $em->createQuery('DELETE FROM App\Entity\Account')->execute();
+        $this->em->createQuery('DELETE FROM App\Entity\Employee')->execute();
+        $this->em->createQuery('DELETE FROM App\Entity\Week')->execute();
+        $this->em->createQuery('DELETE FROM App\Entity\Account')->execute();
     }
 
     public function testIndexRequiresAuthentication(): void
@@ -98,6 +98,38 @@ final class WeekControllerTest extends WebTestCase
         ], $this->loginToken());
 
         self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateRejectsStartDateThatIsNotAMonday(): void
+    {
+        // 2026-11-24 est un mardi : le DTO l'accepte (format valide), le service le refuse
+        $this->jsonRequest('POST', self::BASE, [
+            'year' => 2026,
+            'weekNumber' => 48,
+            'startDate' => '2026-11-24',
+        ], $this->loginToken());
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateRejectsOverlappingWeek(): void
+    {
+        // Semaine historique à une date non ISO : elle couvre du 2026-11-25 au 2026-12-02,
+        // donc elle chevauche la S48 normale (2026-11-23 -> 2026-11-30)
+        $existing = new Week();
+        $existing->setYear(2026);
+        $existing->setWeekNumber(47);
+        $existing->setStartDate(new \DateTimeImmutable('2026-11-25'));
+        $this->em->persist($existing);
+        $this->em->flush();
+
+        $this->jsonRequest('POST', self::BASE, [
+            'year' => 2026,
+            'weekNumber' => 48,
+            'startDate' => '2026-11-23',
+        ], $this->loginToken());
+
+        self::assertResponseStatusCodeSame(409);
     }
 
     public function testShowMalformedAndUnknownIdReturn404(): void
