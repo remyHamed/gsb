@@ -18,10 +18,11 @@ final class WeekControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $this->em = static::getContainer()->get('doctrine')->getManager();
+        $em = static::getContainer()->get('doctrine')->getManager();
 
-        $this->em->createQuery('DELETE FROM ' . Week::class)->execute();
-        $this->em->createQuery('DELETE FROM ' . Account::class)->execute();
+        $em->createQuery('DELETE FROM App\Entity\Employee')->execute();
+        $em->createQuery('DELETE FROM App\Entity\Week')->execute();
+        $em->createQuery('DELETE FROM App\Entity\Account')->execute();
     }
 
     public function testIndexRequiresAuthentication(): void

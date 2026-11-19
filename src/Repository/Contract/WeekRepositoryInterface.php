@@ -15,6 +15,8 @@ interface WeekRepositoryInterface
 
     public function existsDuplicate(int $year, int $weekNumber, ?Uuid $excludeId): bool;
 
+    public function overlapsPeriod(\DateTimeImmutable $start, \DateTimeImmutable $end, ?Uuid $excludeId = null): bool;
+    
     /** @throws WeekAlreadyExistsException */
     public function save(Week $week): void;
 

@@ -40,6 +40,23 @@ class WeekRepository extends ServiceEntityRepository implements WeekRepositoryIn
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
     }
 
+    public function overlapsPeriod(\DateTimeImmutable $start, \DateTimeImmutable $end, ?Uuid $excludeId = null): bool
+    {
+        $qb = $this->createQueryBuilder('w')
+            ->select('COUNT(w.id)')
+            ->andWhere('w.startDate < :end')
+            ->andWhere('w.startDate > :minStart')
+            ->setParameter('end', $end)
+            ->setParameter('minStart', $start->modify('-7 days'));
+
+        if ($excludeId !== null) {
+            $qb->andWhere('w.id != :excludeId')
+                ->setParameter('excludeId', $excludeId, 'uuid');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
     public function save(Week $week): void
     {
         $em = $this->getEntityManager();

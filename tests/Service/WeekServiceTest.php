@@ -11,6 +11,8 @@ use App\Service\Impl\WeekService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use App\Exception\InvalidWeekPeriodException;
+use App\Exception\WeekOverlapException;
 
 final class WeekServiceTest extends TestCase
 {
@@ -75,6 +77,14 @@ final class WeekServiceTest extends TestCase
     public function testCreatePersistsWeek(): void
     {
         $this->weeks->expects(self::once())->method('existsDuplicate')->with(2026, 48, null)->willReturn(false);
+        $this->weeks->expects(self::once())
+            ->method('overlapsPeriod')
+            ->with(
+                self::equalTo(new \DateTimeImmutable('2026-11-23')),
+                self::equalTo(new \DateTimeImmutable('2026-11-30')),
+                null
+            )
+            ->willReturn(false);
         $this->weeks->expects(self::once())->method('save')->with(self::callback(
             static fn (Week $week): bool => $week->getYear() === 2026
                 && $week->getWeekNumber() === 48
@@ -84,6 +94,65 @@ final class WeekServiceTest extends TestCase
         $week = $this->service->create($this->input());
 
         self::assertSame(48, $week->getWeekNumber());
+    }
+
+    public function testCreateRejectsInvalidDateFormat(): void
+    {
+        $this->weeks->expects(self::never())->method('existsDuplicate');
+        $this->weeks->expects(self::never())->method('overlapsPeriod');
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(InvalidWeekPeriodException::class);
+
+        $this->service->create($this->input(['startDate' => 'not-a-date']));
+    }
+
+    public function testCreateRejectsInvalidWeekNumber(): void
+    {
+        $this->weeks->expects(self::never())->method('existsDuplicate');
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(InvalidWeekPeriodException::class);
+
+        // 2027 n'a que 52 semaines ISO : la "semaine 53" tombe le 2028-01-03
+        $this->service->create($this->input([
+            'year' => 2027,
+            'weekNumber' => 53,
+            'startDate' => '2028-01-03',
+        ]));
+    }
+
+    public function testCreateRejectsStartDateNotMatchingIsoWeek(): void
+    {
+        $this->weeks->expects(self::never())->method('existsDuplicate');
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(InvalidWeekPeriodException::class);
+
+        // 2026-11-24 est un mardi, pas le lundi de la semaine 48 (2026-11-23)
+        $this->service->create($this->input([
+            'year' => 2026,
+            'weekNumber' => 48,
+            'startDate' => '2026-11-24',
+        ]));
+    }
+
+    public function testCreateRejectsOverlappingPeriod(): void
+    {
+        $this->weeks->expects(self::once())->method('existsDuplicate')->with(2026, 48, null)->willReturn(false);
+        $this->weeks->expects(self::once())
+            ->method('overlapsPeriod')
+            ->with(
+                self::equalTo(new \DateTimeImmutable('2026-11-23')),
+                self::equalTo(new \DateTimeImmutable('2026-11-30')),
+                null
+            )
+            ->willReturn(true);
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(WeekOverlapException::class);
+
+        $this->service->create($this->input());
     }
 
     public function testCreateRejectsDuplicate(): void
@@ -114,6 +183,48 @@ final class WeekServiceTest extends TestCase
 
         self::assertSame(2027, $updated->getYear());
         self::assertSame(2, $updated->getWeekNumber());
+    }
+
+    public function testUpdateRejectsInvalidPeriod(): void
+    {
+        $week = $this->week();
+        $this->weeks->method('findById')->willReturn($week);
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(InvalidWeekPeriodException::class);
+
+        $this->service->update(self::WEEK_ID, $this->input([
+            'year' => 2027,
+            'weekNumber' => 2,
+            'startDate' => '2027-01-12', // mardi au lieu de lundi 2027-01-11
+        ]));
+    }
+
+    public function testUpdateRejectsOverlappingPeriod(): void
+    {
+        $week = $this->week();
+        (new \ReflectionProperty(Week::class, 'id'))
+            ->setValue($week, Uuid::fromString(self::WEEK_ID));
+
+        $this->weeks->method('findById')->willReturn($week);
+        $this->weeks->method('existsDuplicate')->with(2027, 2, $week->getId())->willReturn(false);
+        $this->weeks->expects(self::once())
+            ->method('overlapsPeriod')
+            ->with(
+                self::equalTo(new \DateTimeImmutable('2027-01-11')),
+                self::equalTo(new \DateTimeImmutable('2027-01-18')),
+                $week->getId()
+            )
+            ->willReturn(true);
+        $this->weeks->expects(self::never())->method('save');
+
+        $this->expectException(WeekOverlapException::class);
+
+        $this->service->update(self::WEEK_ID, $this->input([
+            'year' => 2027,
+            'weekNumber' => 2,
+            'startDate' => '2027-01-11',
+        ]));
     }
 
     public function testDeleteRemovesWeek(): void
