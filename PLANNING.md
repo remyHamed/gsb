@@ -2,7 +2,7 @@
 
 Ce document détaille le planning et la méthodologie suivis pour la refonte de l'API [gensceduleback](https://gitlab.com/remyHamed/gensceduleback), initialement écrite en TypeScript, vers une architecture Symfony (PHP).
 
-> **Périmètre** : ce planning couvre la migration à parité de fonctionnalités avec l'API TypeScript existante (Auth + module Employee). L'ajout de nouvelles features ou de nouvelles routes/CRUD fait l'objet d'itérations et d'issues ultérieures, hors du scope de la parité (voir Phase 4 : module `Week`, première de ces itérations).
+> **Périmètre** : ce planning couvre la migration à parité de fonctionnalités avec l'API TypeScript existante (Auth + module Employee). L'ajout de nouvelles features ou de nouvelles routes/CRUD fait l'objet d'itérations et d'issues ultérieures, hors du scope de la parité (voir Phases 4 à 6 : modules `Week`, `Shift`, assignation et génération du planning).
 
 ## 1. Diagramme de Gantt (Planning prévisionnel)
 
@@ -39,7 +39,14 @@ gantt
     Validation ISO & anti-chevauchement         :done, w2, after w1, 2d
     Mapping HTTP des exceptions (422 / 409)     :done, w3, after w2, 1d
     Tests contrôleur (422 / 409)                :done, w4, after w3, 1d
-    Module Shift (max 2/jour, 14/semaine)       :w5, after w4, 3d
+
+    section 5. Module Shift (nouvelle feature)
+    CRUD Shift (date dans la semaine, 2/jour, 14/semaine) :s1, after w4, 3d
+    Regles Employee (isAvailableOn, hasSkill)             :s2, after s1, 2d
+
+    section 6. Assignation & génération
+    Assignation manuelle (4 regles d'eligibilite)         :g1, after s2, 3d
+    Generation automatique (priorite week-end, moins d'heures) :g2, after g1, 3d
 ```
 
 ## 2. Roadmap et Découpage des Tâches
@@ -92,8 +99,36 @@ Règles métier retenues : une semaine dure 7 jours, `startDate` est le lundi IS
 - [x] Exceptions métier : `InvalidWeekPeriodException` (422), `WeekOverlapException` (409), `WeekAlreadyExistsException` (409).
 - [x] Tests unitaires du service (`WeekServiceTest`, 13 tests).
 - [x] Tests contrôleur : `startDate` non lundi → 422, chevauchement → 409.
-- [ ] Module `Shift` : date comprise dans la semaine, 2 shifts max par jour, 14 max par semaine.
-- [ ] Règles à trancher : modification de `startDate` d'une `Week` ayant déjà des `Shift`, suppression d'une `Week` avec `Shift` (cascade ou blocage).
+- [ ] Règles à trancher : modification de `startDate` d'une `Week` ayant déjà des `Shift`, suppression d'une `Week` avec `Shift` (cascade ou blocage). Traité avec la Phase 5.
+
+### Phase 5 : Module `Shift` (nouvelle feature, hors parité TS)
+
+Règles métier : un `Shift` est rattaché à une `Week` (date comprise entre `startDate` et `startDate + 6 jours`), `endTime` strictement après `startTime`, 2 shifts max par jour, 14 max par `Week`. Remplacement du `ShiftController` Twig actuel par une API JSON.
+
+- [ ] Tests `GET /api/shifts` (liste complète et par semaine) + cas d'erreur.
+- [ ] Implémentation `GET /api/shifts`.
+- [ ] Tests `GET /api/shifts/{id}` (200 / 404).
+- [ ] Implémentation `GET /api/shifts/{id}`.
+- [ ] Tests `POST /api/shifts` (création + validations période, horaires, quotas 2/jour et 14/semaine).
+- [ ] Implémentation `POST /api/shifts`.
+- [ ] Tests `PUT /api/shifts/{id}` (mise à jour + revalidation des règles).
+- [ ] Implémentation `PUT /api/shifts/{id}`.
+- [ ] Tests `DELETE /api/shifts/{id}` (204 / 404).
+- [ ] Implémentation `DELETE /api/shifts/{id}`.
+- [ ] Tests & gestion de l'impact `Week` / `Shift` (modification de `startDate` ou suppression d'une `Week` contenant des shifts).
+
+### Phase 6 : Assignation et génération du planning
+
+Portage de `ScheduleService` et `ScheduleGenerationService`. Prérequis : `isAvailableOn` et `hasSkill` (Phase 3). Règles d'éligibilité (compétence, disponibilité midi/soir, plafond `weeklyHours`, non-doublon sur le shift), suivi des heures déjà assignées, et priorité week-end + moins d'heures (`LeastHoursFirstStrategy`) sur une `Week` existante.
+
+- [ ] Tests unitaires des règles d'éligibilité (1 classe par règle) et du compteur d'heures (`AssignedHoursTracker`).
+- [ ] Implémentation des règles d'éligibilité et du suivi des heures.
+- [ ] Tests `POST /api/shifts/{id}/assign` (assignation manuelle + refus si règle violée).
+- [ ] Implémentation `POST /api/shifts/{id}/assign`.
+- [ ] Tests `DELETE /api/shifts/{id}/assign/{employeeId}` (désassignation).
+- [ ] Implémentation `DELETE /api/shifts/{id}/assign/{employeeId}`.
+- [ ] Tests `POST /api/weeks/{id}/generate` (génération automatique du planning de la semaine).
+- [ ] Implémentation `POST /api/weeks/{id}/generate`.
 
 ## 3. Definition of Done
 
