@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Repository\Contract;
+
+use App\Entity\Shift;
+use Symfony\Component\Uid\Uuid;
+
+interface ShiftRepositoryInterface
+{
+    /** @return Shift[] */
+    public function findAll(): array;
+
+    /** @return Shift[] */
+    public function findByWeek(Uuid $weekId): array;
+}
