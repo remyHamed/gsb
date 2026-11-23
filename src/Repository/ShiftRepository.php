@@ -32,4 +32,9 @@ class ShiftRepository extends ServiceEntityRepository implements ShiftRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findById(Uuid $id): ?Shift
+    {
+        return $this->find($id);
+    }
 }

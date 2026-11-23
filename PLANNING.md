@@ -105,8 +105,8 @@ Règles métier retenues : une semaine dure 7 jours, `startDate` est le lundi IS
 
 Règles métier : un `Shift` est rattaché à une `Week` (date comprise entre `startDate` et `startDate + 6 jours`), `endTime` strictement après `startTime`, 2 shifts max par jour, 14 max par `Week`. Remplacement du `ShiftController` Twig actuel par une API JSON.
 
-- [ ] Tests `GET /api/shifts` (liste complète et par semaine) + cas d'erreur.
-- [ ] Implémentation `GET /api/shifts`.
+- [x] Tests `GET /api/shifts` (liste complète et par semaine) + cas d'erreur.
+- [x] Implémentation `GET /api/shifts`.
 - [ ] Tests `GET /api/shifts/{id}` (200 / 404).
 - [ ] Implémentation `GET /api/shifts/{id}`.
 - [ ] Tests `POST /api/shifts` (création + validations période, horaires, quotas 2/jour et 14/semaine).

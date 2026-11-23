@@ -172,7 +172,9 @@ final class WeekServiceTest extends TestCase
             ->setValue($week, Uuid::fromString(self::WEEK_ID));
 
         $this->weeks->method('findById')->willReturn($week);
-        $this->weeks->method('existsDuplicate')->with(2027, 2, $week->getId())->willReturn(false);
+        $this->weeks->expects(self::once())->method('existsDuplicate')
+            ->with(2027, 2, $week->getId())
+            ->willReturn(false);
         $this->weeks->expects(self::once())->method('save')->with(self::identicalTo($week));
 
         $updated = $this->service->update(self::WEEK_ID, $this->input([
@@ -207,7 +209,10 @@ final class WeekServiceTest extends TestCase
             ->setValue($week, Uuid::fromString(self::WEEK_ID));
 
         $this->weeks->method('findById')->willReturn($week);
-        $this->weeks->method('existsDuplicate')->with(2027, 2, $week->getId())->willReturn(false);
+        $this->weeks->expects(self::once())
+            ->method('existsDuplicate')
+            ->with(2027, 2, $week->getId())
+            ->willReturn(false);
         $this->weeks->expects(self::once())
             ->method('overlapsPeriod')
             ->with(

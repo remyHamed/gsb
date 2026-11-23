@@ -6,6 +6,8 @@ use App\Exception\WeekNotFoundException;
 use App\Repository\Contract\ShiftRepositoryInterface;
 use App\Repository\Contract\WeekRepositoryInterface;
 use App\Service\Contract\ShiftServiceInterface;
+use App\Exception\ShiftNotFoundException;
+use App\Entity\Shift;
 use Symfony\Component\Uid\Uuid;
 
 final class ShiftService implements ShiftServiceInterface
@@ -34,5 +36,14 @@ final class ShiftService implements ShiftServiceInterface
         }
 
         return $this->shifts->findByWeek($id);
+    }
+
+    public function findById(string $id) : Shift
+    {
+
+        $shift = Uuid::isValid($id) ? $this->shifts->findById(Uuid::fromString($id)) : null;
+        
+        return $shift ?? throw new ShiftNotFoundException($id);
+        
     }
 }

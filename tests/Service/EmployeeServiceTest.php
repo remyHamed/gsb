@@ -15,7 +15,9 @@ use App\Service\Impl\EmployeeService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 final class EmployeeServiceTest extends TestCase
 {
     private const EMPLOYEE_ID = '018f0000-0000-7000-8000-000000000001';
@@ -135,7 +137,7 @@ final class EmployeeServiceTest extends TestCase
     public function testCreatePersistsActiveEmployeeLinkedToAccount(): void
     {
         $account = $this->account(self::ACCOUNT_ID);
-        $this->accounts->method('findById')->with(Uuid::fromString(self::ACCOUNT_ID))->willReturn($account);
+        $this->accounts->expects(self::once())->method('findById')->with(Uuid::fromString(self::ACCOUNT_ID))->willReturn($account);
         $this->employees->method('existsByAccount')->willReturn(false);
 
         $this->employees->expects(self::once())->method('save')->with(self::callback(
@@ -157,7 +159,7 @@ final class EmployeeServiceTest extends TestCase
 
     public function testCreateThrowsWhenAccountDoesNotExist(): void
     {
-        $this->accounts->method('findById')->willReturn(null);
+        $this->accounts->expects(self::once())->method('findById')->willReturn(null);
         $this->employees->expects(self::never())->method('save');
 
         $this->expectException(AccountNotFoundException::class);
@@ -167,8 +169,8 @@ final class EmployeeServiceTest extends TestCase
 
     public function testCreateThrowsWhenAccountAlreadyHasAnEmployee(): void
     {
-        $this->accounts->method('findById')->willReturn($this->account(self::ACCOUNT_ID));
-        $this->employees->method('existsByAccount')
+        $this->accounts->expects(self::once())->method('findById')->willReturn($this->account(self::ACCOUNT_ID));
+        $this->employees->expects(self::once())->method('existsByAccount')
             ->with(Uuid::fromString(self::ACCOUNT_ID))
             ->willReturn(true);
         $this->employees->expects(self::never())->method('save');

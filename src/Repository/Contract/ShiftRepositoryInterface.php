@@ -12,4 +12,6 @@ interface ShiftRepositoryInterface
 
     /** @return Shift[] */
     public function findByWeek(Uuid $weekId): array;
+
+    public function findById(Uuid $id): ?Shift;
 }
