@@ -1,5 +1,5 @@
 <?php
-namespace App\Repository;
+namespace App\Repository\Impl;
 
 use App\Entity\Week;
 use App\Exception\WeekAlreadyExistsException;

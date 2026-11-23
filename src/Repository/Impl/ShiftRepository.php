@@ -1,6 +1,5 @@
 <?php
-
-namespace App\Repository;
+namespace App\Repository\Impl;
 
 use App\Entity\Shift;
 use App\Repository\Contract\ShiftRepositoryInterface;

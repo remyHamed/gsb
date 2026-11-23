@@ -16,4 +16,6 @@ interface ShiftServiceInterface
      * @throws WeekNotFoundException
      */
     public function findByWeek(string $weekId): array;
+
+    public function findById(string $id) : Shift;
 }

@@ -8,6 +8,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
 #[Route('/api/shifts')]
 final class ShiftController extends AbstractController
@@ -24,5 +25,11 @@ final class ShiftController extends AbstractController
             : $this->shifts->findByWeek($weekId);
 
         return $this->json(array_map(ShiftOutput::toArray(...), $shifts));
+    }
+
+    #[Route('/{id}', name: 'api_shift_show', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
+    public function show(string $id): JsonResponse
+    {
+        return $this->json(ShiftOutput::toArray($this->shifts->findById($id)));
     }
 }

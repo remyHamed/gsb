@@ -124,6 +124,20 @@ final class ShiftControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testShowReturnsShiftWithFullShape(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $shift = $this->seedShift($week, '2026-11-23', '11:30', '15:00', ['caisse', 'salle']);
+
+        $data = $this->jsonRequest('GET', self::BASE . '/' . $shift->getId()->toRfc4122(), token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame($shift->getId()->toRfc4122(), $data['id']);
+        self::assertSame('2026-11-23', $data['date']);
+        self::assertSame(['caisse', 'salle'], $data['skillsRequired']);
+        self::assertSame($week->getId()->toRfc4122(), $data['weekId']);
+    }
+
     // ---------- Helpers ----------
 
     private function jsonRequest(string $method, string $uri, ?array $payload = null, ?string $token = null): array
