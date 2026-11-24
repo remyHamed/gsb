@@ -138,6 +138,13 @@ final class ShiftControllerTest extends WebTestCase
         self::assertSame($week->getId()->toRfc4122(), $data['weekId']);
     }
 
+    public function testShowUnknownIdReturns404(): void
+    {
+        $this->jsonRequest('GET', self::BASE . '/018f0000-0000-7000-8000-000000000000', token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
     // ---------- Helpers ----------
 
     private function jsonRequest(string $method, string $uri, ?array $payload = null, ?string $token = null): array

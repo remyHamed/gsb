@@ -107,8 +107,8 @@ Règles métier : un `Shift` est rattaché à une `Week` (date comprise entre `s
 
 - [x] Tests `GET /api/shifts` (liste complète et par semaine) + cas d'erreur.
 - [x] Implémentation `GET /api/shifts`.
-- [ ] Tests `GET /api/shifts/{id}` (200 / 404).
-- [ ] Implémentation `GET /api/shifts/{id}`.
+- [x] Tests `GET /api/shifts/{id}` (200 / 404).
+- [x] Implémentation `GET /api/shifts/{id}`.
 - [ ] Tests `POST /api/shifts` (création + validations période, horaires, quotas 2/jour et 14/semaine).
 - [ ] Implémentation `POST /api/shifts`.
 - [ ] Tests `PUT /api/shifts/{id}` (mise à jour + revalidation des règles).
