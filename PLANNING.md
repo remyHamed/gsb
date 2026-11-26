@@ -41,13 +41,12 @@ gantt
     Tests contrôleur (422 / 409)                :done, w4, after w3, 1d
 
     section 5. Module Shift (nouvelle feature)
-    CRUD Shift (date dans la semaine, 2/jour, 14/semaine) :s1, after w4, 3d
+    CRUD Shift (date dans la semaine, 2/jour, 14/semaine) :active, s1, after w4, 3d
     Regles Employee (isAvailableOn, hasSkill)             :s2, after s1, 2d
 
     section 6. Assignation & génération
     Assignation manuelle (4 regles d'eligibilite)         :g1, after s2, 3d
-    Generation automatique (priorite week-end, moins d'heures) :g2, after g1, 3d
-```
+    Generation automatique (priorite week-end, moins d'heures) :g2, after g1, 3d``
 
 ## 2. Roadmap et Découpage des Tâches
 
@@ -103,12 +102,13 @@ Règles métier retenues : une semaine dure 7 jours, `startDate` est le lundi IS
 
 ### Phase 5 : Module `Shift` (nouvelle feature, hors parité TS)
 
-Règles métier : un `Shift` est rattaché à une `Week` (date comprise entre `startDate` et `startDate + 6 jours`), `endTime` strictement après `startTime`, 2 shifts max par jour, 14 max par `Week`. Remplacement du `ShiftController` Twig actuel par une API JSON.
+Règles métier : un `Shift` est rattaché à une `Week` immuable (date comprise entre `startDate` et `startDate + 6 jours`), `endTime` strictement après `startTime`, aucun chevauchement horaire sur une même journée, 2 shifts max par jour, 14 max par `Week`, modification libre de `skillsRequired`, suppression directe autorisée (nettoyage de la liaison `shift_employee`). Remplacement du `ShiftController` Twig actuel par une API JSON.
 
 - [x] Tests `GET /api/shifts` (liste complète et par semaine) + cas d'erreur.
 - [x] Implémentation `GET /api/shifts`.
 - [x] Tests `GET /api/shifts/{id}` (200 / 404).
 - [x] Implémentation `GET /api/shifts/{id}`.
+- [x] Logique métier & tests unitaires `ShiftService` (`create`, `update`, `delete` + validations période, horaires, anti-chevauchement, quotas 2/jour et 14/semaine, immuabilité de la `Week`).
 - [ ] Tests `POST /api/shifts` (création + validations période, horaires, quotas 2/jour et 14/semaine).
 - [ ] Implémentation `POST /api/shifts`.
 - [ ] Tests `PUT /api/shifts/{id}` (mise à jour + revalidation des règles).
