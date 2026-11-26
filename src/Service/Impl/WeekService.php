@@ -11,6 +11,7 @@ use App\Exception\WeekOverlapException;
 use App\Repository\Contract\WeekRepositoryInterface;
 use App\Service\Contract\WeekServiceInterface;
 use Symfony\Component\Uid\Uuid;
+use App\Exception\WeekInUseException;
 
 final class WeekService implements WeekServiceInterface
 {
@@ -56,6 +57,7 @@ final class WeekService implements WeekServiceInterface
         $week = $this->findById($id);
         $startDate = $this->parseStartDate($input->startDate);
 
+        $this->assertPeriodChangeAllowed($week, $input->year, $input->weekNumber, $startDate);
         $this->assertStartDateIsMonday($startDate);
         $this->assertWeekNumberInRange($input->year, $input->weekNumber);
         $this->assertWeekExistsInYear($input->year, $input->weekNumber);
@@ -147,5 +149,24 @@ final class WeekService implements WeekServiceInterface
         return (new \DateTimeImmutable('today'))
             ->setISODate($year, $weekNumber, 1)
             ->setTime(0, 0);
+    }
+
+    private function assertPeriodChangeAllowed(
+        Week $week,
+        int $year,
+        int $weekNumber,
+        \DateTimeImmutable $startDate,
+    ): void {
+        if ($week->getShifts()->isEmpty()) {
+            return;
+        }
+
+        $unchanged = $week->getYear() === $year
+            && $week->getWeekNumber() === $weekNumber
+            && $week->getStartDate()?->format('Y-m-d') === $startDate->format('Y-m-d');
+
+        if (!$unchanged) {
+            throw new WeekInUseException();
+        }
     }
 }

@@ -20,6 +20,7 @@ final class WeekControllerTest extends WebTestCase
         $this->client = static::createClient();
         $this->em = static::getContainer()->get('doctrine')->getManager();
 
+        $this->em->createQuery('DELETE FROM App\Entity\Shift')->execute();
         $this->em->createQuery('DELETE FROM App\Entity\Employee')->execute();
         $this->em->createQuery('DELETE FROM App\Entity\Week')->execute();
         $this->em->createQuery('DELETE FROM App\Entity\Account')->execute();
@@ -167,5 +168,65 @@ final class WeekControllerTest extends WebTestCase
         $this->jsonRequest('POST', '/auth/register', $credentials);
 
         return $this->jsonRequest('POST', '/auth/login', $credentials)['token'];
+    }
+
+    public function testDeleteWeekCascadesToItsShifts(): void
+    {
+        $token = $this->loginToken();
+
+        $created = $this->jsonRequest('POST', self::BASE, [
+            'year' => 2026,
+            'weekNumber' => 48,
+            'startDate' => '2026-11-23',
+        ], $token);
+        $weekId = $created['id'];
+
+        $shift = $this->jsonRequest('POST', '/api/shifts', [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+            'skillsRequired' => ['caisse'],
+        ], $token);
+        self::assertResponseStatusCodeSame(201);
+
+        $this->jsonRequest('DELETE', self::BASE . '/' . $weekId, token: $token);
+        self::assertResponseStatusCodeSame(204);
+
+        // La semaine et son shift ont bien été supprimés
+        $this->jsonRequest('GET', self::BASE . '/' . $weekId, token: $token);
+        self::assertResponseStatusCodeSame(404);
+
+        $this->jsonRequest('GET', '/api/shifts/' . $shift['id'], token: $token);
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testUpdateRejectsChangingPeriodWhenWeekHasShifts(): void
+    {
+        $token = $this->loginToken();
+
+        $created = $this->jsonRequest('POST', self::BASE, [
+            'year' => 2026,
+            'weekNumber' => 48,
+            'startDate' => '2026-11-23',
+        ], $token);
+        $weekId = $created['id'];
+
+        $this->jsonRequest('POST', '/api/shifts', [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], $token);
+        self::assertResponseStatusCodeSame(201);
+
+        // Tentative de décaler la semaine à S49 alors qu'elle a un shift
+        $this->jsonRequest('PUT', self::BASE . '/' . $weekId, [
+            'year' => 2026,
+            'weekNumber' => 49,
+            'startDate' => '2026-11-30',
+        ], $token);
+
+        self::assertResponseStatusCodeSame(409);
     }
 }
