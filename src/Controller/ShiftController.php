@@ -6,9 +6,12 @@ use App\Dto\Shift\ShiftOutput;
 use App\Service\Contract\ShiftServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use App\Dto\Shift\ShiftInput;
 
 #[Route('/api/shifts')]
 final class ShiftController extends AbstractController
@@ -31,5 +34,35 @@ final class ShiftController extends AbstractController
     public function show(string $id): JsonResponse
     {
         return $this->json(ShiftOutput::toArray($this->shifts->findById($id)));
+    }
+
+    #[Route('', name: 'api_shift_create', methods: ['POST'])]
+    public function create(#[MapRequestPayload] ShiftInput $input): JsonResponse
+    {
+        try {
+            $shift = $this->shifts->create($input);
+        } catch (\DomainException $e) {
+            return $this->json(
+                ['message' => $e->getMessage()],
+                $this->resolveDomainExceptionStatus($e),
+            );
+        }
+
+        $payload = ShiftOutput::toArray($shift);
+
+        return $this->json(
+            $payload,
+            Response::HTTP_CREATED,
+            ['Location' => '/api/shifts/' . $payload['id']],
+        );
+    }
+
+    private function resolveDomainExceptionStatus(\DomainException $e): int
+    {
+        if (str_contains($e->getMessage(), 'overlaps') || str_contains($e->getMessage(), 'quota')) {
+            return Response::HTTP_CONFLICT;
+        }
+
+        return Response::HTTP_UNPROCESSABLE_ENTITY;
     }
 }

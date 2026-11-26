@@ -172,4 +172,118 @@ final class ShiftControllerTest extends WebTestCase
 
         return $this->jsonRequest('POST', '/auth/login', $credentials)['token'];
     }
+
+    public function testCreateRequiresAuthentication(): void
+    {
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => '018f0000-0000-7000-8000-000000000000',
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+            'skillsRequired' => ['caisse'],
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCreatePersistsShiftAndReturns201WithFullShape(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $weekId = $week->getId()->toRfc4122();
+
+        $data = $this->jsonRequest('POST', self::BASE, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+            'skillsRequired' => ['caisse'],
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertArrayHasKey('id', $data);
+        self::assertSame($weekId, $data['weekId']);
+        self::assertSame('2026-11-23', $data['date']);
+        self::assertSame('11:30', $data['startTime']);
+        self::assertSame('15:00', $data['endTime']);
+        self::assertSame(['caisse'], $data['skillsRequired']);
+        self::assertSame([], $data['assignedEmployeeIds']);
+        self::assertResponseHeaderSame('Location', self::BASE . '/' . $data['id']);
+    }
+
+    public function testCreateWithInvalidInputFormatReturns422(): void
+    {
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => 'not-a-uuid',
+            'date' => '23/11/2026',
+            'startTime' => '25:99',
+            'endTime' => '15:00',
+            'skillsRequired' => [''],
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateWithUnknownWeekReturns404(): void
+    {
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => '018f0000-0000-7000-8000-000000000000',
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCreateWithDateOutsideWeekOrInvalidHoursReturns422(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $token = $this->loginToken();
+        $weekId = $week->getId()->toRfc4122();
+
+        // Date hors semaine
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => $weekId,
+            'date' => '2026-11-30',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(422);
+
+        // endTime <= startTime
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '15:00',
+            'endTime' => '11:30',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testCreateWithOverlapOrExceededQuotasReturns409(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $this->seedShift($week, '2026-11-23', '09:00', '11:30');
+        $this->seedShift($week, '2026-11-23', '12:00', '15:00');
+        $token = $this->loginToken();
+        $weekId = $week->getId()->toRfc4122();
+
+        // Chevauchement horaire
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '11:00',
+            'endTime' => '13:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(409);
+
+        // Quota 2 shifts / jour atteint
+        $this->jsonRequest('POST', self::BASE, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '18:00',
+            'endTime' => '22:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(409);
+    }
 }
