@@ -80,4 +80,12 @@ final class ShiftController extends AbstractController
 
         return $this->json(ShiftOutput::toArray($shift));
     }
+
+    #[Route('/{id}', name: 'api_shift_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
+    public function delete(string $id): Response
+    {
+        $this->shifts->delete($id);
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
 }

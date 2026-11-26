@@ -418,4 +418,37 @@ final class ShiftControllerTest extends WebTestCase
         ], token: $token);
         self::assertResponseStatusCodeSame(409);
     }
+
+    // ---------- DELETE /api/shifts/{id} ----------
+
+    public function testDeleteRequiresAuthentication(): void
+    {
+        $this->jsonRequest('DELETE', self::BASE . '/018f0000-0000-7000-8000-000000000000');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testDeleteRemovesShiftAndReturns204(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $shift = $this->seedShift($week, '2026-11-23', '11:30', '15:00');
+        $shiftId = $shift->getId()->toRfc4122();
+        $token = $this->loginToken();
+
+        $this->jsonRequest('DELETE', self::BASE . '/' . $shiftId, token: $token);
+
+        self::assertResponseStatusCodeSame(204);
+        self::assertSame('', $this->client->getResponse()->getContent());
+
+        // Vérifie que le shift n'est plus accessible
+        $this->jsonRequest('GET', self::BASE . '/' . $shiftId, token: $token);
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testDeleteUnknownShiftReturns404(): void
+    {
+        $this->jsonRequest('DELETE', self::BASE . '/018f0000-0000-7000-8000-000000000000', token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
+    }
 }
