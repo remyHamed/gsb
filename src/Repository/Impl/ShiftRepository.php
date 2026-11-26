@@ -5,6 +5,7 @@ use App\Entity\Shift;
 use App\Repository\Contract\ShiftRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Override;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
@@ -35,5 +36,12 @@ class ShiftRepository extends ServiceEntityRepository implements ShiftRepository
     public function findById(Uuid $id): ?Shift
     {
         return $this->find($id);
+    }
+    #[Override]
+    public function save(Shift $shift): void
+    {
+        $em = $this->getEntityManager();
+        $em->persist($shift);
+        $em->flush();
     }
 }

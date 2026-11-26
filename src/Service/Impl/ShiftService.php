@@ -9,6 +9,7 @@ use App\Service\Contract\ShiftServiceInterface;
 use App\Exception\ShiftNotFoundException;
 use App\Entity\Shift;
 use Symfony\Component\Uid\Uuid;
+use App\Dto\Shift\ShiftInput;
 
 final class ShiftService implements ShiftServiceInterface
 {
@@ -45,5 +46,53 @@ final class ShiftService implements ShiftServiceInterface
         
         return $shift ?? throw new ShiftNotFoundException($id);
         
+    }
+
+    public function create(ShiftInput $input): Shift
+    {
+        if (!Uuid::isValid($input->weekId)) {
+            throw new WeekNotFoundException($input->weekId);
+        }
+
+        $week = $this->weeks->findById(Uuid::fromString($input->weekId)) ?? throw new WeekNotFoundException($input->weekId);
+
+        $shift = new Shift();
+        $shift
+            ->setDate(new \DateTimeImmutable($input->date))
+            ->setStartTime($input->startTime)
+            ->setEndTime($input->endTime)
+            ->setSkillsRequired($input->skillsRequired)
+            ->setWeek($week);
+
+        $this->shifts->save($shift);
+
+        return $shift;
+    }
+
+    public function update(string $shiftId, ShiftInput $input): Shift
+    {
+        if (!Uuid::isValid($shiftId)) {
+            throw new ShiftNotFoundException($shiftId);
+        }
+
+        if (!Uuid::isValid($input->weekId)) {
+            throw new WeekNotFoundException($input->weekId);
+        }
+
+        $shift = $this->findById($shiftId);
+
+        $week = $this->weeks->findById(Uuid::fromString($input->weekId))
+            ?? throw new WeekNotFoundException($input->weekId);
+
+        $shift
+            ->setDate(new \DateTimeImmutable($input->date))
+            ->setStartTime($input->startTime)
+            ->setEndTime($input->endTime)
+            ->setSkillsRequired($input->skillsRequired)
+            ->setWeek($week);
+
+        $this->shifts->save($shift);
+
+        return $shift;
     }
 }

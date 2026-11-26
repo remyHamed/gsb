@@ -14,4 +14,6 @@ interface ShiftRepositoryInterface
     public function findByWeek(Uuid $weekId): array;
 
     public function findById(Uuid $id): ?Shift;
+
+    public function save(Shift $shift):void;
 }
