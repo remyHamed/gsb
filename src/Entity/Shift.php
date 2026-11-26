@@ -132,4 +132,71 @@ class Shift
 
         return $this;
     }
+
+    public function toMinutes(string $time): int
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+
+        return ($hours * 60) + $minutes;
+    }
+
+    public function endMinutes(string $endTime, int $startMinutes): int
+    {
+        $end = $this->toMinutes($endTime);
+
+        return ($end === 0 && $startMinutes > 0) ? 1440 : $end;
+    }
+
+
+    public function durationInMinutes(): int
+    {
+        return max(0, $this->endInMinutes() - $this->startInMinutes());
+    }
+
+    public function resolveSlotNumber(): ?int
+    {
+        $dayOfWeek = (int) $this->date->format('N');
+        $base = ($dayOfWeek - 1) * 2;
+        $start = $this->startInMinutes();
+        $end = $this->endInMinutes();
+
+        if ($start >= 630 && $end <= 960) { // 10:30 (630 min) -> 16:00 (960 min)
+            return $base + 1;
+        }
+
+        if ($start >= 1050 && $end <= 1440) { // 17:30 (1050 min) -> 00:00 (1440 min)
+            return $base + 2;
+        }
+
+        return null;
+    }
+
+    public function overlapsWith(self $other): bool
+    {
+        if ($this->date->format('Y-m-d') !== $other->date->format('Y-m-d')) {
+            return false;
+        }
+
+        return $this->startInMinutes() < $other->endInMinutes()
+            && $this->endInMinutes() > $other->startInMinutes();
+    }
+
+    private function startInMinutes(): int
+    {
+        return self::parseTimeToMinutes($this->startTime);
+    }
+
+    private function endInMinutes(): int
+    {
+        $end = self::parseTimeToMinutes($this->endTime);
+
+        return ($end === 0 && $this->startInMinutes() > 0) ? 1440 : $end;
+    }
+
+    private static function parseTimeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+
+        return ($hours * 60) + $minutes;
+    }
 }
