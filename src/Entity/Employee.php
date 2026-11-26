@@ -222,4 +222,23 @@ public function __construct(
 
         return $this;
     }
+
+public function hasAllSkills(array $requiredSkills): bool
+    {
+        return array_diff($requiredSkills, $this->skills) === [];
+    }
+
+    public function isAvailableFor(\DateTimeImmutable $date, int $slotNumber): bool
+    {
+        if (in_array($date->format('Y-m-d'), $this->datesExclues, true)) {
+            return false;
+        }
+
+        return in_array($slotNumber, $this->availableSlots, true);
+    }
+
+    public function weeklyCapacityInMinutes(): int
+    {
+        return $this->weeklyHours * 60;
+    }
 }
