@@ -58,7 +58,13 @@ final class ShiftService implements ShiftServiceInterface
 
         $date = new \DateTimeImmutable($input->date);
 
-        $this->validateShiftRules($week, $date, $input->startTime, $input->endTime);
+        $this->assertValidTimeRange($input->startTime, $input->endTime);
+        $this->assertDateWithinWeek($week, $date);
+
+        $weekShifts = $this->getOtherWeekShifts($week);
+        $this->assertNoOverlapOnDate($weekShifts, $date, $input->startTime, $input->endTime);
+        $this->assertDailyQuotaNotReached($weekShifts, $date);
+        $this->assertWeeklyQuotaNotReached($weekShifts);
 
         $shift = (new Shift())
             ->setDate($date)
@@ -89,7 +95,13 @@ final class ShiftService implements ShiftServiceInterface
 
         $date = new \DateTimeImmutable($input->date);
 
-        $this->validateShiftRules($week, $date, $input->startTime, $input->endTime, $shift->getId());
+        $this->assertValidTimeRange($input->startTime, $input->endTime);
+        $this->assertDateWithinWeek($week, $date);
+
+        $weekShifts = $this->getOtherWeekShifts($week, $shift->getId());
+        $this->assertNoOverlapOnDate($weekShifts, $date, $input->startTime, $input->endTime);
+        $this->assertDailyQuotaNotReached($weekShifts, $date);
+        $this->assertWeeklyQuotaNotReached($weekShifts);
 
         $shift
             ->setDate($date)
@@ -103,17 +115,16 @@ final class ShiftService implements ShiftServiceInterface
         return $shift;
     }
 
-    private function validateShiftRules(
-        Week $week,
-        \DateTimeImmutable $date,
-        string $startTime,
-        string $endTime,
-        ?Uuid $excludeShiftId = null,
-    ): void {
+
+    private function assertValidTimeRange(string $startTime, string $endTime): void
+    {
         if ($endTime <= $startTime) {
             throw new \DomainException('End time must be after start time.');
         }
+    }
 
+    private function assertDateWithinWeek(Week $week, \DateTimeImmutable $date): void
+    {
         $weekStart = $week->getStartDate()->setTime(0, 0);
         $weekEnd = $weekStart->modify('+6 days');
         $normalizedDate = $date->setTime(0, 0);
@@ -121,34 +132,74 @@ final class ShiftService implements ShiftServiceInterface
         if ($normalizedDate < $weekStart || $normalizedDate > $weekEnd) {
             throw new \DomainException('Shift date must fall within the target week.');
         }
+    }
 
+    /**
+     * @return Shift[]
+     */
+    private function getOtherWeekShifts(Week $week, ?Uuid $excludeShiftId = null): array
+    {
         $weekId = $week->getId();
-        $weekShifts = $weekId !== null ? $this->shifts->findByWeek($weekId) : [];
+        if ($weekId === null) {
+            return [];
+        }
 
-        $dailyCount = 0;
-        $weeklyCount = 0;
+        $shifts = $this->shifts->findByWeek($weekId);
+
+        if ($excludeShiftId === null) {
+            return $shifts;
+        }
+
+        return array_filter(
+            $shifts,
+            static fn (Shift $s): bool => !$s->getId()?->equals($excludeShiftId)
+        );
+    }
+
+    /**
+     * @param Shift[] $weekShifts
+     */
+    private function assertNoOverlapOnDate(
+        array $weekShifts,
+        \DateTimeImmutable $date,
+        string $startTime,
+        string $endTime,
+    ): void {
+        $targetDay = $date->format('Y-m-d');
 
         foreach ($weekShifts as $existingShift) {
-            if ($excludeShiftId !== null && $existingShift->getId()?->equals($excludeShiftId)) {
+            if ($existingShift->getDate()->format('Y-m-d') !== $targetDay) {
                 continue;
             }
 
-            $weeklyCount++;
-
-            if ($existingShift->getDate()->format('Y-m-d') === $normalizedDate->format('Y-m-d')) {
-                $dailyCount++;
-
-                if ($startTime < $existingShift->getEndTime() && $endTime > $existingShift->getStartTime()) {
-                    throw new \DomainException('Shift overlaps with an existing shift on this date.');
-                }
+            if ($startTime < $existingShift->getEndTime() && $endTime > $existingShift->getStartTime()) {
+                throw new \DomainException('Shift overlaps with an existing shift on this date.');
             }
         }
+    }
 
-        if ($dailyCount >= 2) {
+    /**
+     * @param Shift[] $weekShifts
+     */
+    private function assertDailyQuotaNotReached(array $weekShifts, \DateTimeImmutable $date): void
+    {
+        $targetDay = $date->format('Y-m-d');
+        $dailyShifts = array_filter(
+            $weekShifts,
+            static fn (Shift $s): bool => $s->getDate()->format('Y-m-d') === $targetDay
+        );
+
+        if (count($dailyShifts) >= 2) {
             throw new \DomainException('Daily quota of 2 shifts reached.');
         }
+    }
 
-        if ($weeklyCount >= 14) {
+    /**
+     * @param Shift[] $weekShifts
+     */
+    private function assertWeeklyQuotaNotReached(array $weekShifts): void
+    {
+        if (count($weekShifts) >= 14) {
             throw new \DomainException('Weekly quota of 14 shifts reached.');
         }
     }
