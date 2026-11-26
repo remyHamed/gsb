@@ -185,6 +185,110 @@ final class ShiftServiceTest extends TestCase
         self::assertSame($week, $result->getWeek());
     }
 
+    public function testCreateRejectsMalformedWeekId(): void
+    {
+        $this->mockweekRepository->expects(self::never())->method('findById');
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(WeekNotFoundException::class);
+
+        $this->mockShiftService->create(new ShiftInput('not-a-uuid', '2026-11-23', '11:30', '15:00'));
+    }
+
+    public function testCreateThrowsWhenWeekDoesNotExist(): void
+    {
+        $this->mockweekRepository->method('findById')->willReturn(null);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(WeekNotFoundException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-23', '11:30', '15:00'));
+    }
+
+    public function testCreateRejectsDateBeforeWeekStart(): void
+    {
+        $week = $this->weekWithId(); // 2026-11-23 au 2026-11-29
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-22', '11:30', '15:00'));
+    }
+
+    public function testCreateRejectsDateAfterWeekEnd(): void
+    {
+        $week = $this->weekWithId(); // 2026-11-23 au 2026-11-29
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-30', '11:30', '15:00'));
+    }
+
+    public function testCreateRejectsEndTimeBeforeOrEqualToStartTime(): void
+    {
+        $week = $this->weekWithId();
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-23', '15:00', '11:30'));
+    }
+
+    public function testCreateRejectsOverlappingShiftOnSameDay(): void
+    {
+        $week = $this->weekWithId();
+        $existing = $this->shiftWithId('018f0000-0000-7000-8000-0000000000d2', '2026-11-23', '11:30', '15:00', $week);
+
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->method('findByWeek')->willReturn([$existing]);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-23', '14:00', '18:00'));
+    }
+
+    public function testCreateRejectsWhenDailyQuotaOfTwoIsReached(): void
+    {
+        $week = $this->weekWithId();
+        $shift1 = $this->shiftWithId('018f0000-0000-7000-8000-0000000000d2', '2026-11-23', '09:00', '11:30', $week);
+        $shift2 = $this->shiftWithId('018f0000-0000-7000-8000-0000000000d3', '2026-11-23', '12:00', '15:00', $week);
+
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->method('findByWeek')->willReturn([$shift1, $shift2]);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-23', '18:00', '22:00'));
+    }
+
+    public function testCreateRejectsWhenWeeklyQuotaOfFourteenIsReached(): void
+    {
+        $week = $this->weekWithId();
+        $fourteenShifts = [];
+        for ($i = 0; $i < 14; $i++) {
+            $dayOffset = intdiv($i, 2);
+            $date = (new \DateTimeImmutable('2026-11-23'))->modify("+{$dayOffset} days")->format('Y-m-d');
+            $start = $i % 2 === 0 ? '11:00' : '18:00';
+            $end = $i % 2 === 0 ? '15:00' : '22:00';
+            $id = sprintf('018f0000-0000-7000-8000-0000000000%02x', $i + 1);
+            $fourteenShifts[] = $this->shiftWithId($id, $date, $start, $end, $week);
+        }
+
+        $this->mockweekRepository->method('findById')->willReturn($week);
+        $this->mockShiftsRepository->method('findByWeek')->willReturn($fourteenShifts);
+        $this->mockShiftsRepository->expects(self::never())->method('save');
+
+        $this->expectException(\DomainException::class);
+
+        $this->mockShiftService->create(new ShiftInput(self::WEEK_ID, '2026-11-23', '08:00', '10:30'));
+    }
+
     public function testUpdatePersistsAndReturnsUpdatedShift(): void
     {
         $week = $this->weekWithId();
