@@ -198,6 +198,11 @@ final class SchedulingControllerTest extends WebTestCase
 
         self::assertCount(1, $reloadedDinner->getAssignedEmployees());
         self::assertSame($senior->getId()->toRfc4122(), $reloadedDinner->getAssignedEmployees()->first()->getId()->toRfc4122());
+
+        self::assertArrayHasKey('shifts', $data);
+        self::assertCount(2, $data['shifts']);
+        self::assertSame([$senior->getId()->toRfc4122()], $data['shifts'][0]['assignedEmployeeIds']);
+        self::assertSame([$senior->getId()->toRfc4122()], $data['shifts'][1]['assignedEmployeeIds']);
     }
 
     public function testGenerateWeekScheduleUnknownWeekReturns404(): void
@@ -238,4 +243,53 @@ final class SchedulingControllerTest extends WebTestCase
 
         return $this->jsonRequest('POST', '/auth/login', $credentials)['token'];
     }
+
+    // ---------- DELETE /api/weeks/{id}/schedule ----------
+
+  public function testResetWeekScheduleRequiresAuthentication(): void
+  {
+      $this->jsonRequest('DELETE', '/api/weeks/018f0000-0000-7000-8000-000000000000/schedule');
+
+      self::assertResponseStatusCodeSame(401);
+  }
+
+  public function testResetWeekScheduleClearsAllAssignmentsAndReturnsUpdatedWeek(): void
+  {
+      $week = $this->seedWeek(2026, 48, '2026-11-23');
+      $lunch = $this->seedShift($week, '2026-11-23', '11:30', '15:00', ['salle']);
+      $dinner = $this->seedShift($week, '2026-11-23', '19:00', '23:00', ['salle']);
+      $alice = $this->seedEmployee('alice@example.com', 'Alice', '2022-01-01');
+
+      $lunch->addAssignedEmployee($alice);
+      $dinner->addAssignedEmployee($alice);
+      $this->em->flush();
+
+      $weekId = $week->getId()->toRfc4122();
+      $data = $this->jsonRequest(
+          'DELETE',
+          "/api/weeks/{$weekId}/schedule",
+          token: $this->loginToken(),
+      );
+
+      self::assertResponseStatusCodeSame(200);
+      self::assertSame($weekId, $data['id']);
+      self::assertCount(2, $data['shifts']);
+      self::assertSame([], $data['shifts'][0]['assignedEmployeeIds']);
+      self::assertSame([], $data['shifts'][1]['assignedEmployeeIds']);
+
+      $this->em->clear();
+      self::assertCount(0, $this->em->find(Shift::class, $lunch->getId())->getAssignedEmployees());
+      self::assertCount(0, $this->em->find(Shift::class, $dinner->getId())->getAssignedEmployees());
+  }
+
+  public function testResetWeekScheduleUnknownWeekReturns404(): void
+  {
+      $this->jsonRequest(
+          'DELETE',
+          '/api/weeks/018f0000-0000-7000-8000-000000000000/schedule',
+          token: $this->loginToken(),
+      );
+
+      self::assertResponseStatusCodeSame(404);
+  }
 }

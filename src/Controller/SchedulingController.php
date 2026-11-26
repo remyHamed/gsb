@@ -79,6 +79,19 @@ final class SchedulingController extends AbstractController
     {
         $week = $this->scheduling->generateWeekSchedule($id, $maxPerShift);
 
-        return $this->json(WeekOutput::toArray($week));
+        return $this->json(WeekOutput::toArray($week, includeShifts: true));
+    }
+
+    #[Route(
+        '/weeks/{id}/schedule',
+        name: 'api_scheduling_reset_week',
+        requirements: ['id' => Requirement::UUID],
+        methods: ['DELETE'],
+    )]
+    public function resetWeek(string $id): JsonResponse
+    {
+        $week = $this->scheduling->resetWeekSchedule($id);
+
+        return $this->json(WeekOutput::toArray($week, includeShifts: true));
     }
 }

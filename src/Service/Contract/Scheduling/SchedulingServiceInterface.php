@@ -18,4 +18,6 @@ interface SchedulingServiceInterface
     public function unassignEmployee(string $shiftId, string $employeeId): Shift;
 
     public function generateWeekSchedule(string $weekId, ?int $maxPerShift = null): Week;
+
+    public function resetWeekSchedule(string $weekId): Week;
 }

@@ -212,4 +212,34 @@ final class SchedulingServiceTest extends TestCase
 
         return $shift;
     }
+    
+    public function testResetWeekScheduleClearsAllAssignmentsAndSaves(): void
+    {
+        $weekId = Uuid::v4();
+        $week = new Week();
+        $lunch = $this->makeShift($week, '2026-11-23', '11:30', '15:00');
+        $dinner = $this->makeShift($week, '2026-11-23', '19:00', '23:00');
+
+        $alice = $this->makeEmployee('alice@example.com');
+        $lunch->addAssignedEmployee($alice);
+        $dinner->addAssignedEmployee($alice);
+
+        $weekRepo = $this->createStub(WeekRepositoryInterface::class);
+        $weekRepo->method('findById')->willReturn($week);
+
+        $shiftRepo = $this->createMock(ShiftRepositoryInterface::class);
+        $shiftRepo->expects(self::exactly(2))->method('save');
+
+        $service = $this->createService(
+            $weekRepo,
+            $shiftRepo,
+            $this->createStub(EmployeeRepositoryInterface::class),
+        );
+
+        $result = $service->resetWeekSchedule($weekId->toRfc4122());
+
+        self::assertSame($week, $result);
+        self::assertCount(0, $lunch->getAssignedEmployees());
+        self::assertCount(0, $dinner->getAssignedEmployees());
+    }
 }

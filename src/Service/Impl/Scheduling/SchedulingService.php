@@ -104,4 +104,18 @@ final class SchedulingService implements SchedulingServiceInterface
 
         return $week ?? throw new WeekNotFoundException($id);
     }
+
+    public function resetWeekSchedule(string $weekId): Week
+    {
+        $week = $this->findWeekOrFail($weekId);
+
+        foreach ($week->getShifts() as $shift) {
+            foreach ($shift->getAssignedEmployees()->toArray() as $employee) {
+                $shift->removeAssignedEmployee($employee);
+            }
+            $this->shifts->save($shift);
+        }
+
+        return $week;
+    }
 }
