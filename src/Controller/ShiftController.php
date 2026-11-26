@@ -65,4 +65,19 @@ final class ShiftController extends AbstractController
 
         return Response::HTTP_UNPROCESSABLE_ENTITY;
     }
+
+    #[Route('/{id}', name: 'api_shift_update', requirements: ['id' => Requirement::UUID], methods: ['PUT'])]
+    public function update(string $id, #[MapRequestPayload] ShiftInput $input): JsonResponse
+    {
+        try {
+            $shift = $this->shifts->update($id, $input);
+        } catch (\DomainException $e) {
+            return $this->json(
+                ['message' => $e->getMessage()],
+                $this->resolveDomainExceptionStatus($e),
+            );
+        }
+
+        return $this->json(ShiftOutput::toArray($shift));
+    }
 }

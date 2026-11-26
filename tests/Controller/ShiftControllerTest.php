@@ -286,4 +286,136 @@ final class ShiftControllerTest extends WebTestCase
         ], token: $token);
         self::assertResponseStatusCodeSame(409);
     }
+
+    public function testUpdateRequiresAuthentication(): void
+    {
+        $this->jsonRequest('PUT', self::BASE . '/018f0000-0000-7000-8000-000000000000', [
+            'weekId' => '018f0000-0000-7000-8000-000000000000',
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+            'skillsRequired' => ['caisse'],
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testUpdatePersistsChangesAndReturns200(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $shift = $this->seedShift($week, '2026-11-23', '11:30', '15:00', ['caisse']);
+        $shiftId = $shift->getId()->toRfc4122();
+        $weekId = $week->getId()->toRfc4122();
+
+        $data = $this->jsonRequest('PUT', self::BASE . '/' . $shiftId, [
+            'weekId' => $weekId,
+            'date' => '2026-11-24',
+            'startTime' => '12:00',
+            'endTime' => '16:00',
+            'skillsRequired' => ['salle', 'bar'],
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame($shiftId, $data['id']);
+        self::assertSame($weekId, $data['weekId']);
+        self::assertSame('2026-11-24', $data['date']);
+        self::assertSame('12:00', $data['startTime']);
+        self::assertSame('16:00', $data['endTime']);
+        self::assertSame(['salle', 'bar'], $data['skillsRequired']);
+    }
+
+    public function testUpdateUnknownShiftReturns404(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+
+        $this->jsonRequest('PUT', self::BASE . '/018f0000-0000-7000-8000-000000000000', [
+            'weekId' => $week->getId()->toRfc4122(),
+            'date' => '2026-11-23',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testUpdateWithInvalidInputFormatReturns422(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $shift = $this->seedShift($week, '2026-11-23', '11:30', '15:00');
+
+        $this->jsonRequest('PUT', self::BASE . '/' . $shift->getId()->toRfc4122(), [
+            'weekId' => 'not-a-uuid',
+            'date' => '23-11-2026',
+            'startTime' => '99:00',
+            'endTime' => '15:00',
+        ], token: $this->loginToken());
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testUpdateRejectsChangingWeekOrInvalidPeriodHoursWith422(): void
+    {
+        $week48 = $this->seedWeek(2026, 48, '2026-11-23');
+        $week49 = $this->seedWeek(2026, 49, '2026-11-30');
+        $shift = $this->seedShift($week48, '2026-11-23', '11:30', '15:00');
+        $token = $this->loginToken();
+        $shiftUri = self::BASE . '/' . $shift->getId()->toRfc4122();
+        $week48Id = $week48->getId()->toRfc4122();
+
+        // Tentative de changer la semaine
+        $this->jsonRequest('PUT', $shiftUri, [
+            'weekId' => $week49->getId()->toRfc4122(),
+            'date' => '2026-11-30',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(422);
+
+        // Date hors semaine
+        $this->jsonRequest('PUT', $shiftUri, [
+            'weekId' => $week48Id,
+            'date' => '2026-11-30',
+            'startTime' => '11:30',
+            'endTime' => '15:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(422);
+
+        // endTime <= startTime
+        $this->jsonRequest('PUT', $shiftUri, [
+            'weekId' => $week48Id,
+            'date' => '2026-11-23',
+            'startTime' => '15:00',
+            'endTime' => '11:30',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testUpdateWithOverlapOrDailyQuotaReturns409(): void
+    {
+        $week = $this->seedWeek(2026, 48, '2026-11-23');
+        $this->seedShift($week, '2026-11-23', '09:00', '11:30');
+        $this->seedShift($week, '2026-11-23', '12:00', '15:00');
+        $tuesdayShift = $this->seedShift($week, '2026-11-24', '18:00', '22:00');
+        $token = $this->loginToken();
+        $shiftUri = self::BASE . '/' . $tuesdayShift->getId()->toRfc4122();
+        $weekId = $week->getId()->toRfc4122();
+
+        // Chevauchement avec le shift de 12:00-15:00
+        $this->jsonRequest('PUT', $shiftUri, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '14:00',
+            'endTime' => '17:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(409);
+
+        // Déplacement sur lundi qui a déjà 2 shifts (sans chevauchement horaire)
+        $this->jsonRequest('PUT', $shiftUri, [
+            'weekId' => $weekId,
+            'date' => '2026-11-23',
+            'startTime' => '18:00',
+            'endTime' => '22:00',
+        ], token: $token);
+        self::assertResponseStatusCodeSame(409);
+    }
 }
