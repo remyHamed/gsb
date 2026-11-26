@@ -2,7 +2,7 @@
 
 namespace App\Service\Impl;
 
-use App\Dto\WeekInput;
+use App\Dto\Week\WeekInput;
 use App\Entity\Week;
 use App\Exception\InvalidWeekPeriodException;
 use App\Exception\WeekAlreadyExistsException;

@@ -2,7 +2,7 @@
 
 namespace App\Service\Impl;
 
-use App\Dto\EmployeeInput;
+use App\Dto\Employee\EmployeeInput;
 use App\Entity\Account;
 use App\Entity\Employee;
 use App\Exception\EmployeeNotFoundException;

@@ -2,7 +2,7 @@
 
 namespace App\Service\Contract;
 
-use App\Dto\EmployeeInput;
+use App\Dto\Employee\EmployeeInput;
 use App\Entity\Employee;
 
 interface EmployeeServiceInterface

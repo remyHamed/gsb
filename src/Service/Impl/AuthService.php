@@ -2,7 +2,7 @@
 
 namespace App\Service\Impl;
 
-use App\Dto\RegisterInput;
+use App\Dto\Auth\RegisterInput;
 use App\Entity\Account;
 use App\Exception\EmailAlreadyUsedException;
 use App\Repository\Contract\AccountRepositoryInterface;

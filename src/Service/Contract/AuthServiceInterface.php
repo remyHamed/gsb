@@ -2,7 +2,7 @@
 
 namespace App\Service\Contract;
 
-use App\Dto\RegisterInput;
+use App\Dto\Auth\RegisterInput;
 use App\Entity\Account;
 
 interface AuthServiceInterface

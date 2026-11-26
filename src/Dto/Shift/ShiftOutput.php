@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Dto;
+namespace App\Dto\Shift;
 
 use App\Entity\Employee;
 use App\Entity\Shift;

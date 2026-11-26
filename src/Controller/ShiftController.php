@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Dto\ShiftOutput;
+use App\Dto\Shift\ShiftOutput;
 use App\Service\Contract\ShiftServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

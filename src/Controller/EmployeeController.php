@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
-use App\Dto\EmployeeInput;
-use App\Dto\EmployeeOutput;
+use App\Dto\Employee\EmployeeInput;
+use App\Dto\Employee\EmployeeOutput;
 use App\Service\Contract\EmployeeServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

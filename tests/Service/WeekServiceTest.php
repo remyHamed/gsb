@@ -2,7 +2,7 @@
 
 namespace App\Tests\Service;
 
-use App\Dto\WeekInput;
+use App\Dto\Week\WeekInput;
 use App\Entity\Week;
 use App\Exception\WeekAlreadyExistsException;
 use App\Exception\WeekNotFoundException;

@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
-use App\Dto\WeekInput;
-use App\Dto\WeekOutput;
+use App\Dto\Week\WeekInput;
+use App\Dto\Week\WeekOutput;
 use App\Service\Contract\WeekServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

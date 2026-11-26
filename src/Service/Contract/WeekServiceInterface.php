@@ -2,7 +2,7 @@
 
 namespace App\Service\Contract;
 
-use App\Dto\WeekInput;
+use App\Dto\Week\WeekInput;
 use App\Entity\Week;
 
 interface WeekServiceInterface

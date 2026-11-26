@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Dto\RegisterInput;
+use App\Dto\Auth\RegisterInput;
 use App\Service\Impl\AuthService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
