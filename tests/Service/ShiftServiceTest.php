@@ -456,4 +456,39 @@ final class ShiftServiceTest extends TestCase
         $this->mockShiftService->update(self::SHIFT_ID, new ShiftInput(self::WEEK_ID, '2026-11-23', '18:00', '22:00'));
     }
     
+    public function testDeleteRemovesExistingShift(): void
+    {
+        $shift = $this->shiftWithId();
+
+        $this->mockShiftsRepository->expects(self::once())
+            ->method('findById')
+            ->with(Uuid::fromString(self::SHIFT_ID))
+            ->willReturn($shift);
+
+        $this->mockShiftsRepository->expects(self::once())
+            ->method('remove')
+            ->with($shift);
+
+        $this->mockShiftService->delete(self::SHIFT_ID);
+    }
+
+    public function testDeleteThrowsWhenShiftDoesNotExist(): void
+    {
+        $this->mockShiftsRepository->method('findById')->willReturn(null);
+        $this->mockShiftsRepository->expects(self::never())->method('remove');
+
+        $this->expectException(ShiftNotFoundException::class);
+
+        $this->mockShiftService->delete(self::SHIFT_ID);
+    }
+
+    public function testDeleteRejectsMalformedId(): void
+    {
+        $this->mockShiftsRepository->expects(self::never())->method('findById');
+        $this->mockShiftsRepository->expects(self::never())->method('remove');
+
+        $this->expectException(ShiftNotFoundException::class);
+
+        $this->mockShiftService->delete('not-a-uuid');
+    }
 }

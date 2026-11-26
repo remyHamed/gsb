@@ -4,6 +4,7 @@ namespace App\Service\Contract;
 
 use App\Entity\Shift;
 use App\Exception\WeekNotFoundException;
+use App\Dto\Shift\ShiftInput;
 
 interface ShiftServiceInterface
 {
@@ -18,4 +19,11 @@ interface ShiftServiceInterface
     public function findByWeek(string $weekId): array;
 
     public function findById(string $id) : Shift;
+
+    public function create(ShiftInput $input): Shift;
+
+    public function update(string $shiftId, ShiftInput $input): Shift;
+
+    public function delete(string $id): void;
+
 }

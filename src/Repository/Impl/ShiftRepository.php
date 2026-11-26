@@ -44,4 +44,12 @@ class ShiftRepository extends ServiceEntityRepository implements ShiftRepository
         $em->persist($shift);
         $em->flush();
     }
+
+    #[\Override]
+    public function remove(Shift $shift): void
+    {
+        $em = $this->getEntityManager();
+        $em->remove($shift);
+        $em->flush();
+    }
 }

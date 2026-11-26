@@ -16,4 +16,6 @@ interface ShiftRepositoryInterface
     public function findById(Uuid $id): ?Shift;
 
     public function save(Shift $shift):void;
+    
+    public function remove(Shift $shift): void;
 }

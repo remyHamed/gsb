@@ -203,4 +203,11 @@ final class ShiftService implements ShiftServiceInterface
             throw new \DomainException('Weekly quota of 14 shifts reached.');
         }
     }
+    
+    public function delete(string $id): void
+    {
+        $shift = $this->findById($id);
+
+        $this->shifts->remove($shift);
+    }
 }
