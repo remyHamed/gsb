@@ -55,3 +55,19 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
         cgi-fcgi -bind -connect 127.0.0.1:9000 || exit 1
 
 CMD ["php-fpm"]
+
+FROM prod AS render
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nginx \
+        gettext-base \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/nginx/sites-enabled/default
+
+COPY docker/render/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/render/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+HEALTHCHECK NONE
+
+CMD ["/usr/local/bin/entrypoint.sh"]
