@@ -17,6 +17,8 @@ employees.json
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+# OpenTofu
 infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.backup
