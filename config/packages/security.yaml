@@ -38,5 +38,6 @@ security:
             jwt: ~
 
     access_control:
+        - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/auth/(login|register), roles: PUBLIC_ACCESS }
         - { path: ^/, roles: IS_AUTHENTICATED_FULLY }

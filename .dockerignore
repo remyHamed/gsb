@@ -1,7 +1,8 @@
 .git
 .gitignore
 
-docker
+docker/*
+!docker/render
 docker-compose*.yml
 Dockerfile
 
@@ -15,3 +16,6 @@ node_modules/
 
 tests/
 *.md
+
+!docker/render/
+!docker/render/**
