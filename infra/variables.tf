@@ -10,7 +10,7 @@ variable "render_owner_id" {
 }
 
 variable "repo_url" {
-  description = "URL HTTPS du dépôt Git (ex: https://github.com/remyHamed/gsb)"
+  description = "URL HTTPS du dépôt Git"
   type        = string
 }
 
